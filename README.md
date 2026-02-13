@@ -5,3 +5,11 @@ Gave each AI the same instructions.
 
 ChatGPT:
 <img width="1904" height="904" alt="image" src="https://github.com/user-attachments/assets/ed4bd2d6-5805-4d2f-bb51-334d8c4e1f1d" />
+
+
+Gemini:
+<img width="1356" height="773" alt="image" src="https://github.com/user-attachments/assets/3ae82a4f-aa8b-4623-960e-0a7ff5301c0e" />
+
+
+Claude:
+<img width="1432" height="889" alt="image" src="https://github.com/user-attachments/assets/b51cf470-7137-4367-94ae-167d7ec8eb43" />
