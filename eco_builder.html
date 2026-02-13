@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecosystem Builder - Learn Environmental Science</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .main-area {
+            display: grid;
+            grid-template-columns: 250px 1fr 300px;
+            gap: 20px;
+            padding: 20px;
+            min-height: 600px;
+        }
+
+        .toolbar {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            max-height: 700px;
+        }
+
+        .toolbar h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+        }
+
+        .category {
+            margin-bottom: 20px;
+        }
+
+        .category-title {
+            font-weight: bold;
+            color: #34495e;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .item-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .draggable-item {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            cursor: grab;
+            transition: all 0.2s;
+            font-size: 0.85em;
+        }
+
+        .draggable-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-color: #3498db;
+        }
+
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+
+        .item-icon {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .canvas-area {
+            background: linear-gradient(to bottom, #87ceeb 0%, #87ceeb 60%, #f4a460 60%, #f4a460 100%);
+            border-radius: 10px;
+            position: relative;
+            min-height: 600px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .placed-item {
+            position: absolute;
+            cursor: move;
+            user-select: none;
+            transition: opacity 0.3s;
+        }
+
+        .placed-item.dying {
+            opacity: 0.3;
+            filter: grayscale(100%);
+        }
+
+        .placed-item .icon {
+            font-size: 3em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .terrain {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .info-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            max-height: 700px;
+        }
+
+        .info-panel h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #e74c3c;
+            padding-bottom: 8px;
+        }
+
+        .stat-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .stat-label {
+            font-weight: bold;
+            color: #34495e;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            color: #2c3e50;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #f39c12;
+            font-size: 0.9em;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-clear {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #c0392b;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+
+        .health-indicator {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 4px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .health-bar {
+            height: 100%;
+            background: #2ecc71;
+            transition: width 0.3s, background 0.3s;
+        }
+
+        .health-bar.warning {
+            background: #f39c12;
+        }
+
+        .health-bar.critical {
+            background: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌍 Ecosystem Builder</h1>
+            <p>Create your own ecosystem and watch how different elements interact!</p>
+        </div>
+
+        <div class="main-area">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <h3>🎨 Elements</h3>
+                
+                <div class="category">
+                    <div class="category-title">🏞️ Terrain</div>
+                    <div class="item-grid">
+                        <div class="draggable-item" draggable="true" data-type="terrain" data-subtype="water">
+                            <div class="item-icon">💧</div>
+                            <div>Water</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="terrain" data-subtype="mountain">
+                            <div class="item-icon">⛰️</div>
+                            <div>Mountain</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="terrain" data-subtype="rock">
+                            <div class="item-icon">🪨</div>
+                            <div>Rock</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="terrain" data-subtype="sand">
+                            <div class="item-icon">🏖️</div>
+                            <div>Sand</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="category">
+                    <div class="category-title">🌱 Plants</div>
+                    <div class="item-grid">
+                        <div class="draggable-item" draggable="true" data-type="plant" data-subtype="tree">
+                            <div class="item-icon">🌲</div>
+                            <div>Tree</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="plant" data-subtype="bush">
+                            <div class="item-icon">🌳</div>
+                            <div>Bush</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="plant" data-subtype="grass">
+                            <div class="item-icon">🌿</div>
+                            <div>Grass</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="plant" data-subtype="flower">
+                            <div class="item-icon">🌸</div>
+                            <div>Flower</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="plant" data-subtype="cactus">
+                            <div class="item-icon">🌵</div>
+                            <div>Cactus</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="category">
+                    <div class="category-title">🦌 Herbivores</div>
+                    <div class="item-grid">
+                        <div class="draggable-item" draggable="true" data-type="herbivore" data-subtype="deer">
+                            <div class="item-icon">🦌</div>
+                            <div>Deer</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="herbivore" data-subtype="rabbit">
+                            <div class="item-icon">🐰</div>
+                            <div>Rabbit</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="herbivore" data-subtype="butterfly">
+                            <div class="item-icon">🦋</div>
+                            <div>Butterfly</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="herbivore" data-subtype="bee">
+                            <div class="item-icon">🐝</div>
+                            <div>Bee</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="category">
+                    <div class="category-title">🦊 Carnivores</div>
+                    <div class="item-grid">
+                        <div class="draggable-item" draggable="true" data-type="carnivore" data-subtype="wolf">
+                            <div class="item-icon">🐺</div>
+                            <div>Wolf</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="carnivore" data-subtype="fox">
+                            <div class="item-icon">🦊</div>
+                            <div>Fox</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="carnivore" data-subtype="eagle">
+                            <div class="item-icon">🦅</div>
+                            <div>Eagle</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="category">
+                    <div class="category-title">🐟 Aquatic</div>
+                    <div class="item-grid">
+                        <div class="draggable-item" draggable="true" data-type="aquatic" data-subtype="fish">
+                            <div class="item-icon">🐟</div>
+                            <div>Fish</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="aquatic" data-subtype="frog">
+                            <div class="item-icon">🐸</div>
+                            <div>Frog</div>
+                        </div>
+                        <div class="draggable-item" draggable="true" data-type="aquatic" data-subtype="duck">
+                            <div class="item-icon">🦆</div>
+                            <div>Duck</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-clear" onclick="clearEcosystem()">Clear All</button>
+                </div>
+            </div>
+
+            <!-- Canvas Area -->
+            <div class="canvas-area" id="canvas"></div>
+
+            <!-- Info Panel -->
+            <div class="info-panel">
+                <h3>📊 Ecosystem Stats</h3>
+                <div class="stat-item">
+                    <div class="stat-label">🌱 Plants</div>
+                    <div class="stat-value" id="plantCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">🦌 Herbivores</div>
+                    <div class="stat-value" id="herbivoreCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">🦊 Carnivores</div>
+                    <div class="stat-value" id="carnivoreCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">🐟 Aquatic Life</div>
+                    <div class="stat-value" id="aquaticCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">💧 Water Sources</div>
+                    <div class="stat-value" id="waterCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">⚖️ Balance Score</div>
+                    <div class="stat-value" id="balanceScore">0%</div>
+                </div>
+                
+                <h3 style="margin-top: 20px;">📢 Messages</h3>
+                <div id="messages"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ecosystem = {
+            items: [],
+            nextId: 1
+        };
+
+        const iconMap = {
+            tree: '🌲', bush: '🌳', grass: '🌿', flower: '🌸', cactus: '🌵',
+            deer: '🦌', rabbit: '🐰', butterfly: '🦋', bee: '🐝',
+            wolf: '🐺', fox: '🦊', eagle: '🦅',
+            fish: '🐟', frog: '🐸', duck: '🦆',
+            water: '💧', mountain: '⛰️', rock: '🪨', sand: '🏖️'
+        };
+
+        const descriptions = {
+            tree: 'Produces oxygen, provides shelter, prevents erosion',
+            bush: 'Food source for herbivores, provides cover',
+            grass: 'Ground cover, food for grazers, prevents erosion',
+            flower: 'Attracts pollinators, adds biodiversity',
+            cactus: 'Drought-resistant, stores water',
+            deer: 'Eats plants, prey for carnivores',
+            rabbit: 'Eats grass, reproduces quickly',
+            butterfly: 'Pollinates flowers, needs plants',
+            bee: 'Pollinates plants, crucial for ecosystem',
+            wolf: 'Apex predator, controls herbivore population',
+            fox: 'Hunts small animals, scavenger',
+            eagle: 'Aerial predator, top of food chain',
+            fish: 'Needs water, part of aquatic food chain',
+            frog: 'Needs water and land, eats insects',
+            duck: 'Aquatic bird, needs water and plants',
+            water: 'Essential for all life, habitat for aquatic species',
+            mountain: 'Creates microclimates, affects rainfall',
+            rock: 'Provides shelter, affects soil drainage',
+            sand: 'Poor water retention, limits plant growth'
+        };
+
+        // Drag and drop setup
+        document.querySelectorAll('.draggable-item').forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('type', item.dataset.type);
+                e.dataTransfer.setData('subtype', item.dataset.subtype);
+            });
+        });
+
+        const canvas = document.getElementById('canvas');
+
+        canvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('type');
+            const subtype = e.dataTransfer.getData('subtype');
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            addItemToCanvas(type, subtype, x, y);
+        });
+
+        function addItemToCanvas(type, subtype, x, y) {
+            const item = {
+                id: ecosystem.nextId++,
+                type: type,
+                subtype: subtype,
+                x: x,
+                y: y,
+                health: 100,
+                age: 0
+            };
+
+            ecosystem.items.push(item);
+            renderItem(item);
+            evaluateEcosystem();
+            updateStats();
+        }
+
+        function renderItem(item) {
+            const element = document.createElement('div');
+            element.className = 'placed-item';
+            element.id = `item-${item.id}`;
+            element.style.left = `${item.x}px`;
+            element.style.top = `${item.y}px`;
+            element.innerHTML = `
+                <div class="icon">${iconMap[item.subtype]}</div>
+                <div class="health-indicator">
+                    <div class="health-bar" id="health-${item.id}" style="width: ${item.health}%"></div>
+                </div>
+            `;
+
+            // Make draggable
+            element.draggable = true;
+            element.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('itemId', item.id);
+            });
+
+            // Click to remove
+            element.addEventListener('dblclick', () => {
+                removeItem(item.id);
+            });
+
+            // Tooltip
+            element.addEventListener('mouseenter', (e) => {
+                showTooltip(e, item);
+            });
+
+            element.addEventListener('mouseleave', () => {
+                hideTooltip();
+            });
+
+            canvas.appendChild(element);
+        }
+
+        canvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            
+            const itemId = e.dataTransfer.getData('itemId');
+            if (itemId) {
+                // Moving existing item
+                const item = ecosystem.items.find(i => i.id == itemId);
+                if (item) {
+                    const rect = canvas.getBoundingClientRect();
+                    item.x = e.clientX - rect.left;
+                    item.y = e.clientY - rect.top;
+                    document.getElementById(`item-${item.id}`).style.left = `${item.x}px`;
+                    document.getElementById(`item-${item.id}`).style.top = `${item.y}px`;
+                    evaluateEcosystem();
+                }
+            } else {
+                // New item
+                const type = e.dataTransfer.getData('type');
+                const subtype = e.dataTransfer.getData('subtype');
+                if (type && subtype) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    addItemToCanvas(type, subtype, x, y);
+                }
+            }
+        });
+
+        function removeItem(id) {
+            const element = document.getElementById(`item-${id}`);
+            if (element) {
+                element.remove();
+            }
+            ecosystem.items = ecosystem.items.filter(i => i.id !== id);
+            evaluateEcosystem();
+            updateStats();
+        }
+
+        function clearEcosystem() {
+            ecosystem.items = [];
+            canvas.innerHTML = '';
+            updateStats();
+            addMessage('Ecosystem cleared! Start fresh.', 'info');
+        }
+
+        function evaluateEcosystem() {
+            const counts = {
+                plant: ecosystem.items.filter(i => i.type === 'plant').length,
+                herbivore: ecosystem.items.filter(i => i.type === 'herbivore').length,
+                carnivore: ecosystem.items.filter(i => i.type === 'carnivore').length,
+                aquatic: ecosystem.items.filter(i => i.type === 'aquatic').length,
+                water: ecosystem.items.filter(i => i.subtype === 'water').length,
+                sand: ecosystem.items.filter(i => i.subtype === 'sand').length
+            };
+
+            ecosystem.items.forEach(item => {
+                let newHealth = item.health;
+
+                // Plant logic
+                if (item.type === 'plant') {
+                    if (item.subtype === 'cactus') {
+                        // Cacti thrive in sand, suffer near water
+                        if (counts.sand > 0) newHealth = Math.min(100, newHealth + 2);
+                        if (counts.water > 2) newHealth -= 1;
+                    } else {
+                        // Regular plants need water
+                        if (counts.water > 0) newHealth = Math.min(100, newHealth + 2);
+                        else newHealth -= 3;
+                        
+                        // Too much sand is bad for most plants
+                        if (counts.sand > 3) newHealth -= 2;
+                    }
+                }
+
+                // Herbivore logic
+                if (item.type === 'herbivore') {
+                    if (counts.plant > 2) {
+                        newHealth = Math.min(100, newHealth + 2);
+                    } else if (counts.plant === 0) {
+                        newHealth -= 5;
+                        if (newHealth < 50 && Math.random() < 0.3) {
+                            addMessage(`${item.subtype} is starving! Needs more plants.`, 'warning');
+                        }
+                    }
+
+                    // Pollinators need flowers
+                    if ((item.subtype === 'bee' || item.subtype === 'butterfly')) {
+                        const flowers = ecosystem.items.filter(i => i.subtype === 'flower').length;
+                        if (flowers === 0) newHealth -= 3;
+                    }
+
+                    // Predator pressure
+                    if (counts.carnivore > counts.herbivore) {
+                        newHealth -= 2;
+                    }
+                }
+
+                // Carnivore logic
+                if (item.type === 'carnivore') {
+                    if (counts.herbivore > 1) {
+                        newHealth = Math.min(100, newHealth + 2);
+                    } else if (counts.herbivore === 0) {
+                        newHealth -= 5;
+                        if (newHealth < 50 && Math.random() < 0.3) {
+                            addMessage(`${item.subtype} has no prey! Add herbivores.`, 'warning');
+                        }
+                    }
+
+                    // Too many carnivores
+                    if (counts.carnivore > counts.herbivore + 2) {
+                        newHealth -= 3;
+                        if (Math.random() < 0.2) {
+                            addMessage('Too many predators! Competition is fierce.', 'warning');
+                        }
+                    }
+                }
+
+                // Aquatic logic
+                if (item.type === 'aquatic') {
+                    if (counts.water > 0) {
+                        newHealth = Math.min(100, newHealth + 2);
+                    } else {
+                        newHealth -= 10;
+                        if (newHealth < 30 && Math.random() < 0.3) {
+                            addMessage(`${item.subtype} needs water to survive!`, 'critical');
+                        }
+                    }
+                }
+
+                item.health = Math.max(0, Math.min(100, newHealth));
+                updateHealthBar(item);
+            });
+
+            // Check for synergies
+            checkSynergies(counts);
+        }
+
+        function checkSynergies(counts) {
+            const bees = ecosystem.items.filter(i => i.subtype === 'bee').length;
+            const flowers = ecosystem.items.filter(i => i.subtype === 'flower').length;
+            
+            if (bees > 0 && flowers > 2 && Math.random() < 0.1) {
+                addMessage('🐝 Bees are pollinating flowers! Ecosystem thriving.', 'success');
+            }
+
+            if (counts.water > 0 && counts.plant > 3 && Math.random() < 0.1) {
+                addMessage('💧 Water sources supporting healthy plant growth!', 'success');
+            }
+
+            const predatorPreyRatio = counts.herbivore > 0 ? counts.carnivore / counts.herbivore : 0;
+            if (predatorPreyRatio > 0.2 && predatorPreyRatio < 0.5 && Math.random() < 0.1) {
+                addMessage('⚖️ Good predator-prey balance!', 'success');
+            }
+
+            if (counts.plant > 5 && counts.herbivore > 2 && counts.carnivore > 0 && Math.random() < 0.05) {
+                addMessage('🎉 Complete food chain established!', 'success');
+            }
+        }
+
+        function updateHealthBar(item) {
+            const healthBar = document.getElementById(`health-${item.id}`);
+            if (healthBar) {
+                healthBar.style.width = `${item.health}%`;
+                healthBar.className = 'health-bar';
+                if (item.health < 30) healthBar.classList.add('critical');
+                else if (item.health < 60) healthBar.classList.add('warning');
+
+                const element = document.getElementById(`item-${item.id}`);
+                if (item.health < 30) {
+                    element.classList.add('dying');
+                } else {
+                    element.classList.remove('dying');
+                }
+            }
+        }
+
+        function updateStats() {
+            const counts = {
+                plant: ecosystem.items.filter(i => i.type === 'plant').length,
+                herbivore: ecosystem.items.filter(i => i.type === 'herbivore').length,
+                carnivore: ecosystem.items.filter(i => i.type === 'carnivore').length,
+                aquatic: ecosystem.items.filter(i => i.type === 'aquatic').length,
+                water: ecosystem.items.filter(i => i.subtype === 'water').length
+            };
+
+            document.getElementById('plantCount').textContent = counts.plant;
+            document.getElementById('herbivoreCount').textContent = counts.herbivore;
+            document.getElementById('carnivoreCount').textContent = counts.carnivore;
+            document.getElementById('aquaticCount').textContent = counts.aquatic;
+            document.getElementById('waterCount').textContent = counts.water;
+
+            // Calculate balance score
+            let balance = 0;
+            const total = ecosystem.items.length;
+            
+            if (total > 0) {
+                const avgHealth = ecosystem.items.reduce((sum, i) => sum + i.health, 0) / total;
+                balance = avgHealth;
+
+                // Bonus for diversity
+                const types = new Set(ecosystem.items.map(i => i.subtype));
+                if (types.size > 5) balance = Math.min(100, balance + 10);
+            }
+
+            document.getElementById('balanceScore').textContent = `${Math.round(balance)}%`;
+        }
+
+        function addMessage(text, type = 'info') {
+            const messagesDiv = document.getElementById('messages');
+            const message = document.createElement('div');
+            message.className = 'message';
+            message.textContent = text;
+            messagesDiv.insertBefore(message, messagesDiv.firstChild);
+
+            // Keep only last 5 messages
+            while (messagesDiv.children.length > 5) {
+                messagesDiv.removeChild(messagesDiv.lastChild);
+            }
+        }
+
+        let tooltip = null;
+
+        function showTooltip(e, item) {
+            tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.textContent = `${item.subtype}: ${descriptions[item.subtype]} (Health: ${Math.round(item.health)}%)`;
+            document.body.appendChild(tooltip);
+
+            const rect = e.target.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + rect.width / 2}px`;
+            tooltip.style.top = `${rect.top - 40}px`;
+            tooltip.style.transform = 'translateX(-50%)';
+        }
+
+        function hideTooltip() {
+            if (tooltip) {
+                tooltip.remove();
+                tooltip = null;
+            }
+        }
+
+        // Continuous evaluation
+        setInterval(() => {
+            if (ecosystem.items.length > 0) {
+                evaluateEcosystem();
+            }
+        }, 2000);
+
+        // Initial message
+        addMessage('Welcome! Drag elements to build your ecosystem.', 'info');
+    </script>
+</body>
+</html>
