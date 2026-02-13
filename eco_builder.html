@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eco-Builder: STEM Sandbox</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #e0f2f1; display: flex; flex-direction: column; align-items: center; margin: 0; }
+        #game-container { display: flex; gap: 20px; padding: 20px; width: 95vw; max-width: 1200px; }
+        
+        /* Sidebar/Tools */
+        #toolbar { width: 250px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .tool-group { margin-bottom: 20px; }
+        .draggable { 
+            padding: 8px 12px; margin: 5px; background: #4caf50; color: white; cursor: grab; 
+            border-radius: 4px; display: inline-block; font-size: 14px; user-select: none;
+        }
+        .draggable:active { cursor: grabbing; }
+
+        /* The Canvas Area */
+        #ecosystem-canvas { 
+            flex-grow: 1; height: 500px; background: #fff; border: 3px solid #8d6e63; 
+            border-radius: 12px; position: relative; overflow: hidden;
+            background-image: linear-gradient(#81c784 2px, transparent 2px), linear-gradient(90deg, #81c784 2px, transparent 2px);
+            background-size: 40px 40px;
+        }
+
+        /* Stats Panel */
+        #stats-panel { width: 250px; background: #263238; color: white; padding: 15px; border-radius: 12px; }
+        .stat-bar-bg { background: #455a64; height: 15px; border-radius: 10px; margin: 5px 0 15px 0; }
+        .stat-fill { height: 100%; width: 20%; border-radius: 10px; transition: width 0.5s; }
+        
+        #log { font-size: 12px; height: 150px; overflow-y: auto; background: #1a237e; padding: 10px; border-radius: 4px; color: #81d4fa; }
+        
+        /* Game Elements */
+        .placed-item { position: absolute; transform: translate(-50%, -50%); font-size: 30px; cursor: default; }
+    </style>
+</head>
+<body>
+
+    <h1>Eco-Builder Sandbox</h1>
+    <p>Drag elements into the environment to see how the ecosystem shifts!</p>
+
+    <div id="game-container">
+        <div id="toolbar">
+            <div class="tool-group">
+                <h3>Terrain</h3>
+                <div class="draggable" draggable="true" data-type="rock" data-impact="stability">🪨 Rock</div>
+                <div class="draggable" draggable="true" data-type="water" data-impact="hydration">💧 River/Lake</div>
+                <div class="draggable" draggable="true" data-type="mountain" data-impact="climate">🏔️ Mountain</div>
+            </div>
+            <div class="tool-group">
+                <h3>Producers</h3>
+                <div class="draggable" draggable="true" data-type="tree" data-impact="oxygen">🌳 Tree</div>
+                <div class="draggable" draggable="true" data-type="grass" data-impact="food">🌿 Grass</div>
+            </div>
+            <div class="tool-group">
+                <h3>Consumers</h3>
+                <div class="draggable" draggable="true" data-type="herbivore" data-impact="biodiversity">🦌 Herbivore</div>
+                <div class="draggable" draggable="true" data-type="predator" data-impact="biodiversity">🐺 Predator</div>
+            </div>
+            <button onclick="resetGame()" style="margin-top:20px; width:100%; padding:10px; background:#f44336; color:white; border:none; border-radius:5px; cursor:pointer;">Reset Ecosystem</button>
+        </div>
+
+        <div id="ecosystem-canvas" id="drop-zone"></div>
+
+        <div id="stats-panel">
+            <h3>Ecosystem Health</h3>
+            
+            <label>Biodiversity</label>
+            <div class="stat-bar-bg"><div id="bar-bio" class="stat-fill" style="background: #ff7043; width: 10%;"></div></div>
+            
+            <label>Water Quality</label>
+            <div class="stat-bar-bg"><div id="bar-water" class="stat-fill" style="background: #29b6f6; width: 20%;"></div></div>
+            
+            <label>Carbon Sequestration</label>
+            <div class="stat-bar-bg"><div id="bar-oxygen" class="stat-fill" style="background: #66bb6a; width: 0%;"></div></div>
+
+            <h4>Simulation Log</h4>
+            <div id="log">Welcome to the Sandbox. Add a producer to start the food chain.</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('ecosystem-canvas');
+        const log = document.getElementById('log');
+        let stats = { bio: 10, water: 20, oxygen: 0 };
+
+        // Drag and Drop Logic
+        document.querySelectorAll('.draggable').forEach(item => {
+            item.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('type', e.target.getAttribute('data-type'));
+                e.dataTransfer.setData('impact', e.target.getAttribute('data-impact'));
+            });
+        });
+
+        canvas.addEventListener('dragover', e => e.preventDefault());
+
+        canvas.addEventListener('drop', e => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('type');
+            const impact = e.dataTransfer.getData('impact');
+            
+            // Get coordinates relative to canvas
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            placeElement(type, x, y);
+            updateEcosystem(type);
+        });
+
+        function placeElement(type, x, y) {
+            const el = document.createElement('div');
+            el.className = 'placed-item';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            
+            const icons = {
+                rock: '🪨', water: '💧', mountain: '🏔️',
+                tree: '🌳', grass: '🌿', herbivore: '🦌', predator: '🐺'
+            };
+            
+            el.innerText = icons[type];
+            canvas.appendChild(el);
+        }
+
+        function updateEcosystem(type) {
+            let message = "";
+            
+            switch(type) {
+                case 'tree':
+                    stats.oxygen += 15;
+                    stats.bio += 5;
+                    message = "Tree planted: Oxygen production increased. Soil stability improved.";
+                    break;
+                case 'water':
+                    stats.water += 20;
+                    stats.bio += 5;
+                    message = "Water source added: Hydration levels rising. New niches created.";
+                    break;
+                case 'herbivore':
+                    if(stats.oxygen < 10) {
+                        message = "Warning: Not enough vegetation! The herbivore is struggling to find food.";
+                        stats.bio -= 5;
+                    } else {
+                        stats.bio += 15;
+                        stats.oxygen -= 5; // Eating plants
+                        message = "Herbivore introduced: Biodiversity up, but grazing reduces plant mass.";
+                    }
+                    break;
+                case 'predator':
+                    if(stats.bio < 30) {
+                        message = "Danger: Low prey population. Predator may starve.";
+                        stats.bio -= 10;
+                    } else {
+                        stats.bio += 10;
+                        message = "Predator added: Population control established. Ecosystem balancing.";
+                    }
+                    break;
+                case 'mountain':
+                    stats.water += 10;
+                    message = "Mountain creates a rain shadow effect. Water runoff increased.";
+                    break;
+            }
+
+            // Clamp values
+            stats.bio = Math.min(Math.max(stats.bio, 0), 100);
+            stats.water = Math.min(Math.max(stats.water, 0), 100);
+            stats.oxygen = Math.min(Math.max(stats.oxygen, 0), 100);
+
+            updateUI(message);
+        }
+
+        function updateUI(msg) {
+            document.getElementById('bar-bio').style.width = stats.bio + '%';
+            document.getElementById('bar-water').style.width = stats.water + '%';
+            document.getElementById('bar-oxygen').style.width = stats.oxygen + '%';
+            
+            const entry = document.createElement('div');
+            entry.innerHTML = `> ${msg}`;
+            log.prepend(entry);
+        }
+
+        function resetGame() {
+            canvas.innerHTML = '';
+            stats = { bio: 10, water: 20, oxygen: 0 };
+            updateUI("Ecosystem reset to baseline.");
+        }
+    </script>
+</body>
+</html>
