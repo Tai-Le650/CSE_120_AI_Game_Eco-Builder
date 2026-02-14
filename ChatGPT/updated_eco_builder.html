@@ -1,0 +1,2138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EcoBuilder — Ecology Sandbox (Climate • Predation • End Summary)</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel: rgba(255,255,255,.06);
+      --text:#e9eefc;
+      --muted:#a9b5da;
+      --border: rgba(255,255,255,.10);
+      --shadow: 0 14px 40px rgba(0,0,0,.35);
+      --radius:16px;
+      --good: rgba(108,255,181,.35);
+      --bad: rgba(255,107,122,.35);
+      --warn: rgba(255,207,90,.35);
+    }
+    *{ box-sizing:border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body{
+      margin:0;
+      color:var(--text);
+      background: radial-gradient(1200px 600px at 18% 0%, #16264e 0%, var(--bg) 55%, #050913 100%);
+    }
+    header{
+      padding:14px 16px;
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+    }
+    h1{ margin:0; font-size:16px; letter-spacing:.2px; }
+    .sub{ color:var(--muted); font-size:12px; line-height:1.25; max-width:980px; }
+
+    .wrap{
+      display:grid;
+      grid-template-columns: 340px 1fr 380px;
+      gap:14px;
+      padding:0 14px 16px 14px;
+      align-items:start;
+    }
+    .card{
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card h2{
+      margin:0;
+      padding:12px 12px 10px 12px;
+      font-size:13px;
+      border-bottom:1px solid var(--border);
+      background: rgba(0,0,0,.12);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .hint{ color:var(--muted); font-weight:500; font-size:11px; }
+
+    /* Tabs */
+    .tabs{
+      display:flex; flex-wrap:wrap; gap:8px;
+      padding:10px 12px 0 12px;
+    }
+    .tabbtn{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.12);
+      color:var(--text);
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .tabbtn.active{
+      background: linear-gradient(180deg, rgba(108,255,181,.18), rgba(108,255,181,.08));
+      border-color: rgba(108,255,181,.35);
+    }
+
+    /* Palette grid */
+    .palette{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      padding:12px;
+    }
+    .item{
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.12);
+      border-radius:14px;
+      padding:10px;
+      cursor:grab;
+      user-select:none;
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      min-height:70px;
+      transition: transform .08s ease, border-color .12s ease;
+    }
+    .item:active{ cursor:grabbing; transform: scale(.99); }
+    .item:hover{ border-color: rgba(255,255,255,.22); }
+    .icon{
+      width:34px; height:34px; border-radius:10px;
+      display:grid; place-items:center;
+      font-size:18px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      flex:0 0 auto;
+    }
+    .meta .name{ margin:0; font-size:12px; font-weight:800; line-height:1.15; }
+    .meta .desc{ margin:4px 0 0 0; color:var(--muted); font-size:11px; line-height:1.25; }
+
+    /* Controls */
+    .controls{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      padding:12px;
+      border-top:1px solid var(--border);
+      background: rgba(0,0,0,.10);
+    }
+    .btn{
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.12));
+      color:var(--text);
+      padding:10px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:12px;
+      user-select:none;
+    }
+    .btn:hover{ background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.14)); }
+    .btn.good{ border-color: var(--good); }
+    .btn.danger{ border-color: var(--bad); }
+
+    /* Panels */
+    .panel{
+      padding:12px;
+      border-top:1px solid var(--border);
+      background: rgba(0,0,0,.06);
+    }
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin:10px 0;
+    }
+    .row label{
+      font-size:12px;
+      color: var(--muted);
+      flex: 1 1 auto;
+    }
+    input[type="range"]{ width: 58%; }
+    .pill{
+      font-size:11px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.14);
+      padding:2px 8px;
+      border-radius:999px;
+      color: rgba(255,255,255,.85);
+      white-space:nowrap;
+    }
+    .presetGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    /* Canvas */
+    .worldWrap{ padding:12px; }
+    .canvasShell{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      overflow:hidden;
+      background: rgba(0,0,0,.14);
+      position:relative;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+    }
+    canvas{ display:block; width:100%; height:auto; }
+    .overlayText{
+      position:absolute; left:12px; top:12px;
+      font-size:12px;
+      color: rgba(255,255,255,.85);
+      background: rgba(0,0,0,.25);
+      border:1px solid rgba(255,255,255,.14);
+      padding:6px 10px;
+      border-radius:999px;
+      pointer-events:none;
+      backdrop-filter: blur(6px);
+    }
+
+    /* Stats/log */
+    .stats{
+      padding:12px;
+      display:grid;
+      gap:10px;
+    }
+    .stat{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.12);
+      border-radius:14px;
+      padding:10px;
+    }
+    .stat .row2{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+    .stat .label{ color:var(--muted); font-size:11px; }
+    .stat .value{ font-size:14px; font-weight:900; }
+    .bar{
+      height:10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.10);
+      overflow:hidden;
+      margin-top:8px;
+    }
+    .bar > div{
+      height:100%;
+      width:50%;
+      background: linear-gradient(90deg, rgba(108,255,181,.85), rgba(108,255,181,.25));
+      border-radius:999px;
+    }
+    .log{
+      max-height: 360px;
+      overflow:auto;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      border-top:1px solid var(--border);
+      background: rgba(0,0,0,.08);
+    }
+    .logItem{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:12px;
+      padding:10px;
+      background: rgba(0,0,0,.10);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .tag{
+      display:inline-block;
+      font-size:10px;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      margin-right:8px;
+      color: rgba(255,255,255,.85);
+      background: rgba(0,0,0,.14);
+    }
+    .tag.good{ border-color: var(--good); }
+    .tag.bad{ border-color: var(--bad); }
+    .tag.info{ border-color: var(--warn); }
+
+    .help{
+      padding:12px;
+      border-top:1px solid var(--border);
+      background: rgba(0,0,0,.08);
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.35;
+    }
+    code.kbd{
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.14);
+      padding:2px 6px;
+      border-radius:8px;
+      color:var(--text);
+    }
+
+    /* Modal (End summary) */
+    .modalBackdrop{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:50;
+    }
+    .modal{
+      width:min(980px, 100%);
+      max-height: min(86vh, 900px);
+      overflow:auto;
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:18px;
+      background: rgba(0,0,0,.12);
+      box-shadow: 0 24px 80px rgba(0,0,0,.55);
+    }
+    .modalHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:14px 14px 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.14);
+    }
+    .modalHeader h3{ margin:0; font-size:14px; }
+    .modalBody{
+      padding:14px;
+      color: rgba(255,255,255,.92);
+      font-size:12px;
+      line-height:1.45;
+    }
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    .box{
+        border:1px solid rgba(255,255,255,.10);
+        background: rgba(10,14,24,.95);
+        border-radius:14px;
+        padding:12px;
+    }
+    .box h4{
+      margin:0 0 8px 0;
+      font-size:12px;
+      color: rgba(255,255,255,.92);
+    }
+    .mini{
+      color: var(--muted);
+      font-size:11px;
+      margin-top:6px;
+    }
+    .pillRow{
+      display:flex; flex-wrap:wrap; gap:8px;
+      margin-top:8px;
+    }
+    .pill2{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.10);
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:11px;
+      color: rgba(255,255,255,.88);
+    }
+    .causeList{
+      margin:8px 0 0 16px;
+      padding:0;
+    }
+    .causeList li{ margin:6px 0; }
+    .footerBtns{
+      display:flex;
+      gap:10px;
+      padding:14px;
+      border-top:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.10);
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+
+    @media (max-width: 1100px){
+      .wrap{ grid-template-columns: 1fr; }
+      header{ flex-direction:column; align-items:flex-start; }
+      .grid2{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>EcoBuilder — Ecology / Environmental Science Sandbox</h1>
+    <div class="sub">
+      Drag & drop terrain, plants, and animals anywhere. Press <b>Play</b> to run the simulation: climate affects rain/evaporation,
+      water flows downhill, plants filter water and stabilize soil, and predators hunt prey.
+      <b>End Game:</b> if you introduce life and then <i>all plants and animals die out</i>, you’ll get a cause-and-effect summary of what happened and why.
+    </div>
+  </div>
+  <div class="sub">Tip: Hold <code class="kbd">Shift</code> to paint larger terrain areas.</div>
+</header>
+
+<div class="wrap">
+  <!-- LEFT -->
+  <section class="card">
+    <h2>Build Tools <span class="hint">Drag → drop • Tabs for Climate/Presets</span></h2>
+
+    <div class="tabs">
+      <div class="tabbtn active" data-tab="terrain">Terrain</div>
+      <div class="tabbtn" data-tab="plants">Plants</div>
+      <div class="tabbtn" data-tab="animals">Animals</div>
+      <div class="tabbtn" data-tab="tools">Tools</div>
+      <div class="tabbtn" data-tab="climate">Climate</div>
+      <div class="tabbtn" data-tab="presets">Preset Terrain</div>
+    </div>
+
+    <div id="leftContent">
+      <div id="palette" class="palette"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn good" id="btnPlay">▶ Play</button>
+      <button class="btn" id="btnStep">⏭ Step</button>
+      <button class="btn" id="btnMixed">🎲 Mixed Biomes</button>
+      <button class="btn danger" id="btnReset">↺ Reset</button>
+    </div>
+
+    <div class="panel">
+      <div class="row">
+        <label>Tick Speed <span class="pill" id="speedLabel">1×</span></label>
+        <input id="speed" type="range" min="0.25" max="6" value="1" step="0.25">
+      </div>
+      <div class="help" style="border-top:none; padding:0; margin-top:6px;">
+        Higher speed = more simulation steps per real-time second (faster water + faster animal movement).
+      </div>
+    </div>
+
+    <div class="help">
+      <b>Cause → Effect basics (what this model tries to teach):</b>
+      <ul style="margin:8px 0 0 18px; padding:0;">
+        <li><b>Climate</b> controls rainfall and evaporation → changes water availability → changes survival.</li>
+        <li><b>Terrain</b> controls slope + infiltration → changes runoff & sediment → changes water quality.</li>
+        <li><b>Plants</b> add food + filtration → improve water quality and support herbivores.</li>
+        <li><b>Predators</b> reduce prey populations; if prey collapses, predators starve too.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- CENTER -->
+  <section class="card">
+    <h2>World <span class="hint" id="worldHint">Auto: OFF • Tick 0</span></h2>
+    <div class="worldWrap">
+      <div class="canvasShell" id="canvasShell">
+        <div class="overlayText" id="overlay">Drop items anywhere • Play to run</div>
+        <canvas id="c" width="1100" height="650"></canvas>
+      </div>
+      <div class="help">
+        Click the map to <b>Inspect</b> local conditions quickly (terrain, water, quality, slope).
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="card">
+    <h2>Ecosystem Effects <span class="hint">Explained</span></h2>
+    <div class="stats" id="stats"></div>
+    <div class="log" id="log"></div>
+  </section>
+</div>
+
+<!-- END SUMMARY MODAL -->
+<div class="modalBackdrop" id="backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="summaryTitle">
+    <div class="modalHeader">
+      <h3 id="summaryTitle">End Game Summary</h3>
+      <button class="btn" id="btnCloseSummary">Close</button>
+    </div>
+    <div class="modalBody" id="summaryBody"></div>
+    <div class="footerBtns">
+      <button class="btn" id="btnCopySummary">Copy summary</button>
+      <button class="btn danger" id="btnResetFromSummary">Reset World</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // =========================================================
+  // Simulation resolution (internal grid), no visible grid
+  // =========================================================
+  const SIM_W = 220;
+  const SIM_H = 130;
+
+  // Canvas + UI
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  const shell = document.getElementById("canvasShell");
+  const overlay = document.getElementById("overlay");
+  const worldHint = document.getElementById("worldHint");
+
+  const leftContent = document.getElementById("leftContent");
+  let paletteEl = document.getElementById("palette");
+
+  const statsEl = document.getElementById("stats");
+  const logEl = document.getElementById("log");
+
+  const btnPlay = document.getElementById("btnPlay");
+  const btnStep = document.getElementById("btnStep");
+  const btnMixed = document.getElementById("btnMixed");
+  const btnReset = document.getElementById("btnReset");
+
+  const speedSlider = document.getElementById("speed");
+  const speedLabel = document.getElementById("speedLabel");
+
+  // Modal
+  const backdrop = document.getElementById("backdrop");
+  const summaryBody = document.getElementById("summaryBody");
+  const btnCloseSummary = document.getElementById("btnCloseSummary");
+  const btnCopySummary = document.getElementById("btnCopySummary");
+  const btnResetFromSummary = document.getElementById("btnResetFromSummary");
+
+  // =========================================================
+  // Definitions: Terrain, Plants, Animals
+  // =========================================================
+  const TERRAIN = {
+    sand:     { name:"Sand", icon:"🏖️", elev:+0.00, soil:0.20, carbon:0.05, infil:0.45, rough:0.25, sediment:0.70 },
+    rock:     { name:"Rocks", icon:"🪨", elev:+0.08, soil:0.15, carbon:0.02, infil:0.10, rough:0.55, sediment:0.55 },
+    grass:    { name:"Grassland", icon:"🌿", elev:+0.02, soil:0.65, carbon:0.45, infil:0.35, rough:0.35, sediment:0.25 },
+    forest:   { name:"Trees", icon:"🌳", elev:+0.04, soil:0.78, carbon:0.85, infil:0.55, rough:0.55, sediment:0.10 },
+    hill:     { name:"Hill", icon:"⛰️", elev:+0.14, soil:0.55, carbon:0.35, infil:0.25, rough:0.65, sediment:0.45 },
+    mountain: { name:"Mountain", icon:"🏔️", elev:+0.30, soil:0.30, carbon:0.20, infil:0.10, rough:0.85, sediment:0.60 },
+    riverbed: { name:"River Bed", icon:"🏞️", elev:-0.10, soil:0.35, carbon:0.08, infil:0.30, rough:0.20, sediment:0.28 },
+    lakebed:  { name:"Lake Bed", icon:"🟦", elev:-0.14, soil:0.30, carbon:0.06, infil:0.25, rough:0.15, sediment:0.18 },
+    oceanbed: { name:"Ocean", icon:"🌊", elev:-0.20, soil:0.05, carbon:0.10, infil:0.05, rough:0.10, sediment:0.15 },
+    waterSrc: { name:"Water Source", icon:"🚰", elev:-0.06, soil:0.35, carbon:0.05, infil:0.00, rough:0.10, sediment:0.05 },
+  };
+
+  const PLANTS = {
+    grass: { name:"Wild Grass", icon:"🌾", waterNeed:0.25, prefers:["grass","hill"], food:0.45, filter:0.02 },
+    shrub: { name:"Shrubs", icon:"🌿", waterNeed:0.30, prefers:["grass","hill","mountain"], food:0.30, filter:0.02 },
+    reeds: { name:"Wetland Reeds", icon:"🎋", waterNeed:0.60, prefers:["riverbed","lakebed","waterSrc"], food:0.35, filter:0.06 },
+    kelp:  { name:"Kelp", icon:"🪸", waterNeed:0.85, prefers:["oceanbed"], food:0.35, filter:0.04 },
+    pine:  { name:"Pine", icon:"🌲", waterNeed:0.35, prefers:["forest","mountain","hill"], food:0.12, filter:0.02 },
+  };
+
+  const ANIMALS = {
+    rabbit:{ name:"Rabbit", icon:"🐇", type:"herb", waterNeed:0.25, habitat:["grass","forest","hill"], speed:22, fearWater:0.55, vision:140 },
+    deer:  { name:"Deer", icon:"🦌", type:"herb", waterNeed:0.30, habitat:["forest","grass","hill"], speed:18, fearWater:0.45, vision:150 },
+    fox:   { name:"Fox", icon:"🦊", type:"pred", waterNeed:0.25, habitat:["forest","grass","hill"], speed:28, fearWater:0.35, vision:200, hunt:["rabbit"] },
+    wolf:  { name:"Wolf", icon:"🐺", type:"pred", waterNeed:0.25, habitat:["forest","hill","mountain"], speed:30, fearWater:0.30, vision:220, hunt:["rabbit","deer"] },
+    fish:  { name:"Fish", icon:"🐟", type:"aquatic", waterNeed:0.85, habitat:["riverbed","lakebed","oceanbed","waterSrc"], speed:34, fearWater:0.00, vision:160 },
+    eagle: { name:"Eagle", icon:"🦅", type:"pred", waterNeed:0.20, habitat:["mountain","hill","forest"], speed:36, fearWater:0.10, vision:260, hunt:["rabbit","fish"] },
+    crab:  { name:"Crab", icon:"🦀", type:"omn", waterNeed:0.65, habitat:["oceanbed","sand"], speed:16, fearWater:0.10, vision:130 },
+  };
+
+  const TOOLS = {
+    remove: { name:"Remove", icon:"🧹", desc:"Remove nearby items + dry water." },
+    inspect:{ name:"Inspect", icon:"🔍", desc:"Inspect local conditions." },
+  };
+
+  // Palette tabs
+  const TAB_ITEMS = {
+    terrain: Object.entries(TERRAIN).map(([id,t]) => ({ kind:"terrain", id, name:t.name, icon:t.icon, desc:"Paint terrain / elevation." })),
+    plants:  Object.entries(PLANTS).map(([id,p]) => ({ kind:"plant", id, name:p.name, icon:p.icon, desc:`Water need ${pct(p.waterNeed)} • Prefers: ${p.prefers.join(", ")}` })),
+    animals: Object.entries(ANIMALS).map(([id,a]) => ({ kind:"animal", id, name:a.name, icon:a.icon, desc:`${a.type} • Water need ${pct(a.waterNeed)} • Vision ${a.vision}px` })),
+    tools:   Object.entries(TOOLS).map(([id,t]) => ({ kind:"tool", id, name:t.name, icon:t.icon, desc:t.desc })),
+  };
+
+  // =========================================================
+  // State
+  // =========================================================
+  const state = {
+    tab: "terrain",
+    dragging: null,
+    shift: false,
+
+    running: false,
+    tick: 0,
+    speed: 1,
+
+    climate: {
+      tempC: 20,
+      precip: 50,
+      storminess: 30,
+    },
+
+    height: new Float32Array(SIM_W * SIM_H),
+    terrainId: new Array(SIM_W * SIM_H).fill("grass"),
+    water: new Float32Array(SIM_W * SIM_H),
+    waterQual: new Float32Array(SIM_W * SIM_H),
+
+    plants: [],   // {id,x,y,size,health}
+    animals: [],  // {id,x,y,vx,vy,energy,thirst,dead}
+
+    // End-game tracking
+    everHadLife: false,       // did user ever add any plant/animal (or did any exist)?
+    endGame: false,
+
+    // Narrative tracking for summary
+    logEvents: [],            // short event records
+    metricsHistory: [],       // {tick, m} sampled
+    causeCounters: new Map(), // causeId -> score
+    lastMetrics: null,
+    extinctionTick: null,
+  };
+
+  // =========================================================
+  // Utilities
+  // =========================================================
+  function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+  function lerp(a,b,t){ return a + (b-a)*t; }
+  function pct(x){ return Math.round(x*100) + "%"; }
+  function dist2(x1,y1,x2,y2){ const dx=x1-x2, dy=y1-y2; return dx*dx+dy*dy; }
+
+  function idx(x,y){ return y*SIM_W + x; }
+  function inBounds(x,y){ return x>=0 && y>=0 && x<SIM_W && y<SIM_H; }
+
+  function canvasToSim(px,py){
+    return {
+      x: Math.floor((px / canvas.width) * SIM_W),
+      y: Math.floor((py / canvas.height) * SIM_H),
+    };
+  }
+
+  function addLog(type, title, text){
+    const item = document.createElement("div");
+    item.className = "logItem";
+    const tag = document.createElement("span");
+    tag.className = "tag " + (type==="good"?"good":type==="bad"?"bad":"info");
+    tag.textContent = title;
+    item.appendChild(tag);
+    item.appendChild(document.createTextNode(text));
+    logEl.prepend(item);
+    while(logEl.children.length > 60) logEl.removeChild(logEl.lastChild);
+
+    // store for summary (short)
+    state.logEvents.push({ tick: state.tick, type, title, text });
+    if(state.logEvents.length > 240) state.logEvents.shift();
+  }
+
+  function bumpCause(id, amount){
+    state.causeCounters.set(id, (state.causeCounters.get(id) || 0) + amount);
+  }
+
+  // =========================================================
+  // Tabs UI
+  // =========================================================
+  document.querySelectorAll(".tabbtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.tab = btn.dataset.tab;
+      renderLeft();
+    });
+  });
+
+  function renderLeft(){
+    // default: palette
+    if(["terrain","plants","animals","tools"].includes(state.tab)){
+      leftContent.innerHTML = `<div id="palette" class="palette"></div>`;
+      paletteEl = document.getElementById("palette");
+      renderPalette();
+      overlay.textContent = state.running ? "Running…" : "Drop items anywhere • Play to run";
+      return;
+    }
+
+    if(state.tab === "climate"){
+      leftContent.innerHTML = "";
+      leftContent.appendChild(buildClimatePanel());
+      overlay.textContent = "Adjust climate (it changes rain/evaporation/storm runoff)";
+      return;
+    }
+
+    if(state.tab === "presets"){
+      leftContent.innerHTML = "";
+      leftContent.appendChild(buildPresetPanel());
+      overlay.textContent = "Choose a world-wide terrain preset";
+      return;
+    }
+  }
+
+  function renderPalette(){
+    paletteEl.innerHTML = "";
+    const items = TAB_ITEMS[state.tab] || [];
+    for(const it of items){
+      const div = document.createElement("div");
+      div.className = "item";
+      div.draggable = true;
+
+      const icon = document.createElement("div");
+      icon.className = "icon";
+      icon.textContent = it.icon;
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const name = document.createElement("p");
+      name.className = "name";
+      name.textContent = it.name;
+      const desc = document.createElement("p");
+      desc.className = "desc";
+      desc.textContent = it.desc || "";
+      meta.appendChild(name);
+      meta.appendChild(desc);
+
+      div.appendChild(icon);
+      div.appendChild(meta);
+
+      div.addEventListener("dragstart", (e) => {
+        state.dragging = { kind: it.kind, id: it.id };
+        e.dataTransfer.setData("text/plain", JSON.stringify(state.dragging));
+        e.dataTransfer.effectAllowed = "copy";
+        overlay.textContent = `Dropping: ${it.icon} ${it.name}`;
+      });
+
+      div.addEventListener("dragend", () => {
+        overlay.textContent = state.running ? "Running…" : "Drop items anywhere • Play to run";
+        state.dragging = null;
+      });
+
+      paletteEl.appendChild(div);
+    }
+  }
+
+  function buildClimatePanel(){
+    const wrap = document.createElement("div");
+    wrap.className = "panel";
+    wrap.innerHTML = `
+      <div class="row">
+        <label>Temperature (°C) <span class="pill" id="tVal"></span></label>
+        <input id="temp" type="range" min="-5" max="45" step="1">
+      </div>
+      <div class="row">
+        <label>Precipitation <span class="pill" id="pVal"></span></label>
+        <input id="precip" type="range" min="0" max="100" step="1">
+      </div>
+      <div class="row">
+        <label>Storminess <span class="pill" id="sVal"></span></label>
+        <input id="storm" type="range" min="0" max="100" step="1">
+      </div>
+
+      <div class="help" style="border-top:none; padding:0; margin-top:10px;">
+        <b>Cause → effect:</b>
+        <ul style="margin:8px 0 0 18px; padding:0;">
+          <li>Hotter → higher evaporation → less water → higher thirst & plant stress.</li>
+          <li>More precipitation → more rainfall → refills basins and helps plants.</li>
+          <li>More storms → more runoff + sediment → lower water quality unless filtered by plants.</li>
+        </ul>
+      </div>
+
+      <div class="presetGrid">
+        <button class="btn" id="drought">🌵 Drought</button>
+        <button class="btn" id="monsoon">🌧️ Monsoon</button>
+        <button class="btn" id="coolwet">❄️ Cool & Wet</button>
+        <button class="btn" id="heatwave">🔥 Heat Wave</button>
+      </div>
+    `;
+
+    const temp = wrap.querySelector("#temp");
+    const precip = wrap.querySelector("#precip");
+    const storm = wrap.querySelector("#storm");
+
+    const tVal = wrap.querySelector("#tVal");
+    const pVal = wrap.querySelector("#pVal");
+    const sVal = wrap.querySelector("#sVal");
+
+    temp.value = state.climate.tempC;
+    precip.value = state.climate.precip;
+    storm.value = state.climate.storminess;
+
+    const update = () => {
+      tVal.textContent = `${state.climate.tempC}°C`;
+      pVal.textContent = `${state.climate.precip}%`;
+      sVal.textContent = `${state.climate.storminess}%`;
+    };
+
+    const explain = () => {
+      addLog("info","Climate",
+        `Updated climate to ${state.climate.tempC}°C, precip ${state.climate.precip}%, storms ${state.climate.storminess}%. ` +
+        `Effect: evap=${Math.round(evapRate()*100)}%, rain=${Math.round(rainRate()*100)}%, storm runoff=${Math.round(stormFactor()*100)}%.`
+      );
+      // cause scoring
+      if(state.climate.tempC > 32) bumpCause("heat", 1.2);
+      if(state.climate.precip < 25) bumpCause("drought", 1.2);
+      if(state.climate.storminess > 60) bumpCause("storms", 1.0);
+    };
+
+    temp.addEventListener("input", () => { state.climate.tempC = Number(temp.value); update(); explain(); });
+    precip.addEventListener("input", () => { state.climate.precip = Number(precip.value); update(); explain(); });
+    storm.addEventListener("input", () => { state.climate.storminess = Number(storm.value); update(); explain(); });
+    update();
+
+    wrap.querySelector("#drought").addEventListener("click", () => setClimatePreset(34, 15, 20, "Drought"));
+    wrap.querySelector("#monsoon").addEventListener("click", () => setClimatePreset(26, 85, 70, "Monsoon"));
+    wrap.querySelector("#coolwet").addEventListener("click", () => setClimatePreset(8, 70, 30, "Cool & Wet"));
+    wrap.querySelector("#heatwave").addEventListener("click", () => setClimatePreset(41, 25, 35, "Heat Wave"));
+
+    return wrap;
+  }
+
+  function setClimatePreset(tempC, precip, storminess, name){
+    state.climate.tempC = tempC;
+    state.climate.precip = precip;
+    state.climate.storminess = storminess;
+    addLog("info","Climate",`Preset "${name}" applied → ${tempC}°C, precip ${precip}%, storms ${storminess}%.`);
+    renderLeft(); // update slider positions
+    if(tempC > 32) bumpCause("heat", 1.4);
+    if(precip < 25) bumpCause("drought", 1.4);
+    if(storminess > 60) bumpCause("storms", 1.2);
+  }
+
+  function buildPresetPanel(){
+    const wrap = document.createElement("div");
+    wrap.className = "panel";
+    wrap.innerHTML = `
+      <div style="color:var(--muted); font-size:12px; line-height:1.35;">
+        Presets repaint the <b>entire</b> map (fast way to test big environmental changes).
+      </div>
+      <div class="presetGrid" style="margin-top:12px;">
+        <button class="btn" id="allGrass">🌿 All Grassland</button>
+        <button class="btn" id="allForest">🌳 All Forest</button>
+        <button class="btn" id="allMount">🏔️ All Mountains</button>
+        <button class="btn" id="allOcean">🌊 All Ocean</button>
+        <button class="btn" id="allDesert">🏖️ All Desert</button>
+        <button class="btn" id="mixed">🎲 Mixed Biomes</button>
+      </div>
+      <div class="help" style="border-top:none; padding:0; margin-top:10px;">
+        <b>Cause → effect:</b>
+        <ul style="margin:8px 0 0 18px; padding:0;">
+          <li>Mountains → steep slopes → faster runoff + more sediment → lower water quality.</li>
+          <li>Desert → low soil/carbon → low plant cover → weaker food web.</li>
+          <li>Ocean → mostly aquatic habitat → many land species fail.</li>
+        </ul>
+      </div>
+    `;
+
+    wrap.querySelector("#allGrass").addEventListener("click", () => applyWorldPreset("grass", "All Grassland"));
+    wrap.querySelector("#allForest").addEventListener("click", () => applyWorldPreset("forest", "All Forest"));
+    wrap.querySelector("#allMount").addEventListener("click", () => applyWorldPreset("mountain", "All Mountains"));
+    wrap.querySelector("#allOcean").addEventListener("click", () => applyWorldPreset("oceanbed", "All Ocean"));
+    wrap.querySelector("#allDesert").addEventListener("click", () => applyWorldPreset("sand", "All Desert"));
+    wrap.querySelector("#mixed").addEventListener("click", () => mixedBiomes());
+
+    return wrap;
+  }
+
+  // =========================================================
+  // Drag/drop & input
+  // =========================================================
+  shell.addEventListener("dragover", (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; });
+  shell.addEventListener("drop", (e) => {
+    e.preventDefault();
+    let payload = state.dragging;
+    try{ payload = JSON.parse(e.dataTransfer.getData("text/plain")); }catch(_){}
+    if(!payload || state.endGame) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const py = (e.clientY - rect.top) * (canvas.height / rect.height);
+    applyDrop(px, py, payload);
+  });
+
+  window.addEventListener("keydown", (e) => { if(e.key==="Shift") state.shift = true; });
+  window.addEventListener("keyup", (e) => { if(e.key==="Shift") state.shift = false; });
+
+  canvas.addEventListener("click", (e) => {
+    if(state.endGame) return;
+    const rect = canvas.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const py = (e.clientY - rect.top) * (canvas.height / rect.height);
+    inspectAt(px,py);
+  });
+
+  speedSlider.addEventListener("input", () => {
+    state.speed = Number(speedSlider.value);
+    speedLabel.textContent = `${state.speed.toFixed(2)}×`.replace(".00","").replace("1.00×","1×");
+    addLog("info","Speed",`Tick speed set to ${speedLabel.textContent}. (Higher speed runs more steps per second.)`);
+  });
+
+  // =========================================================
+  // Actions on drop
+  // =========================================================
+  function applyDrop(px, py, payload){
+    if(payload.kind === "terrain"){
+      paintTerrain(px, py, payload.id);
+      addLog("info","Terrain",
+        `Painted ${TERRAIN[payload.id].name}. Cause: terrain changes slope/infiltration → effect: changes runoff, sediment, habitat suitability.`
+      );
+    } else if(payload.kind === "plant"){
+      placePlant(px, py, payload.id);
+    } else if(payload.kind === "animal"){
+      placeAnimal(px, py, payload.id);
+    } else if(payload.kind === "tool"){
+      if(payload.id === "remove") removeAt(px,py);
+      if(payload.id === "inspect") inspectAt(px,py,true);
+    }
+    renderStats(false);
+  }
+
+  function paintTerrain(px,py,terrainKey){
+    const s = canvasToSim(px,py);
+    const radius = state.shift ? 12 : 6; // sim cells
+    for(let dy=-radius; dy<=radius; dy++){
+      for(let dx=-radius; dx<=radius; dx++){
+        const x = s.x + dx, y = s.y + dy;
+        if(!inBounds(x,y)) continue;
+        if(dx*dx + dy*dy > radius*radius) continue;
+
+        const i = idx(x,y);
+        const t = TERRAIN[terrainKey];
+        state.terrainId[i] = terrainKey;
+        state.height[i] = lerp(state.height[i], t.elev, 0.20);
+
+        if(terrainKey === "riverbed" || terrainKey === "lakebed" || terrainKey === "oceanbed"){
+          const base = terrainKey==="oceanbed" ? 0.72 : terrainKey==="lakebed" ? 0.52 : 0.35;
+          state.water[i] = Math.max(state.water[i], base);
+          state.waterQual[i] = Math.max(state.waterQual[i], 0.55);
+        }
+        if(terrainKey === "waterSrc"){
+          state.water[i] = Math.max(state.water[i], 0.50);
+          state.waterQual[i] = Math.max(state.waterQual[i], 0.65);
+        }
+      }
+    }
+  }
+
+  function placePlant(px,py,plantId){
+    const suit = plantSuitability(px,py,plantId);
+    const p = PLANTS[plantId];
+
+    state.plants.push({
+      id: plantId, x:px, y:py,
+      size: 10 + Math.random()*8,
+      health: clamp01(0.55 + (suit-0.5)*0.95),
+    });
+
+    state.everHadLife = true;
+
+    const why = plantSuitabilityWhy(px,py,plantId);
+    if(suit >= 0.7){
+      addLog("good","Plant",`${p.name} planted and should thrive. Why: ${why}`);
+    } else if(suit >= 0.5){
+      addLog("info","Plant",`${p.name} planted; moderate fit. Why: ${why}`);
+    } else {
+      addLog("bad","Plant",`${p.name} planted but likely declines. Why: ${why}`);
+      bumpCause("habitatMismatch", 0.6);
+    }
+  }
+
+  function placeAnimal(px,py,animalId){
+    const suit = animalSuitability(px,py,animalId);
+    const a = ANIMALS[animalId];
+    const ang = Math.random()*Math.PI*2;
+
+    state.animals.push({
+      id: animalId, x:px, y:py,
+      vx: Math.cos(ang)*0.6,
+      vy: Math.sin(ang)*0.6,
+      energy: clamp01(0.65 + (suit-0.5)*0.55),
+      thirst: 0.30 + Math.random()*0.25,
+      dead: false,
+    });
+
+    state.everHadLife = true;
+
+    const why = animalSuitabilityWhy(px,py,animalId);
+    if(suit >= 0.7){
+      addLog("good","Animal",`${a.name} introduced; good habitat match. Why: ${why}`);
+    } else if(suit >= 0.5){
+      addLog("info","Animal",`${a.name} introduced; may persist. Why: ${why}`);
+    } else {
+      addLog("bad","Animal",`${a.name} introduced; poor fit. Why: ${why}`);
+      bumpCause("habitatMismatch", 0.7);
+    }
+  }
+
+  function removeAt(px,py){
+    const r = 40;
+    const beforeP = state.plants.length;
+    const beforeA = state.animals.length;
+
+    state.plants = state.plants.filter(o => dist2(o.x,o.y,px,py) > r*r);
+    state.animals = state.animals.filter(o => dist2(o.x,o.y,px,py) > r*r);
+
+    // Dry nearby water
+    const s = canvasToSim(px,py);
+    const rad = 11;
+    for(let dy=-rad; dy<=rad; dy++){
+      for(let dx=-rad; dx<=rad; dx++){
+        const x=s.x+dx, y=s.y+dy;
+        if(!inBounds(x,y)) continue;
+        if(dx*dx+dy*dy > rad*rad) continue;
+        const i=idx(x,y);
+        state.water[i] *= 0.70;
+      }
+    }
+
+    addLog("info","Remove",
+      `Removed ${beforeP - state.plants.length} plant(s) and ${beforeA - state.animals.length} animal(s). ` +
+      `Cause: removing biomass reduces food/filtration; effect: weaker food web and potentially lower water quality over time.`
+    );
+    bumpCause("humanRemoval", 0.9);
+  }
+
+  function inspectAt(px,py){
+    const s = canvasToSim(px,py);
+    if(!inBounds(s.x,s.y)) return;
+    const i = idx(s.x,s.y);
+
+    const terr = state.terrainId[i];
+    const w = state.water[i];
+    const q = state.waterQual[i];
+    const h = state.height[i];
+    const sl = localSlope(s.x,s.y);
+
+    addLog("info","Inspect",
+      `Terrain ${TERRAIN[terr].icon} ${TERRAIN[terr].name} • Elev ${h.toFixed(2)} • Slope ${sl.toFixed(2)} • Water ${Math.round(w*100)}% • WaterQ ${Math.round(q*100)}%.`
+    );
+  }
+
+  // =========================================================
+  // Suitability + climate
+  // =========================================================
+  function sampleLocal(px,py){
+    const s = canvasToSim(px,py);
+    const x = Math.max(0, Math.min(SIM_W-1, s.x));
+    const y = Math.max(0, Math.min(SIM_H-1, s.y));
+    const i = idx(x,y);
+    const terr = state.terrainId[i];
+    return {
+      terr,
+      water: clamp01(state.water[i]),
+      wq: clamp01(state.waterQual[i]),
+      soil: TERRAIN[terr].soil,
+      slope: localSlope(x,y),
+      elev: state.height[i],
+    };
+  }
+
+  function plantSuitability(px,py,plantId){
+    const p = PLANTS[plantId];
+    const local = sampleLocal(px,py);
+    const terrOk = p.prefers.includes(local.terr) ? 1 : 0.55;
+
+    // heat increases effective water need
+    const heatStress = clamp01((state.climate.tempC - 20) / 25);
+    const effectiveNeed = clamp01(p.waterNeed + heatStress*0.12);
+
+    const waterOk = clamp01(1 - Math.max(0, effectiveNeed - local.water) * 1.5);
+    const soilOk = clamp01(0.35 + local.soil*0.65);
+
+    return clamp01(0.45*terrOk + 0.35*waterOk + 0.20*soilOk);
+  }
+
+  function plantSuitabilityWhy(px,py,plantId){
+    const p = PLANTS[plantId];
+    const local = sampleLocal(px,py);
+    const heatStress = clamp01((state.climate.tempC - 20) / 25);
+    const effectiveNeed = clamp01(p.waterNeed + heatStress*0.12);
+
+    const parts = [];
+    parts.push(p.prefers.includes(local.terr) ? `terrain matches (${TERRAIN[local.terr].name})` : `terrain mismatch (${TERRAIN[local.terr].name})`);
+    parts.push(local.water >= effectiveNeed*0.85 ? `water access ok` : `water-limited (needs ~${pct(effectiveNeed)}, has ${pct(local.water)})`);
+    parts.push(local.soil > 0.55 ? `good soil` : `poor soil`);
+    if(state.climate.tempC > 30) parts.push(`hot climate increases water stress`);
+    return parts.join("; ") + ".";
+  }
+
+  function animalSuitability(px,py,animalId){
+    const a = ANIMALS[animalId];
+    const local = sampleLocal(px,py);
+
+    const terrOk = a.habitat.includes(local.terr) ? 1 : 0.50;
+
+    const heatStress = clamp01((state.climate.tempC - 20) / 25);
+    const effectiveNeed = clamp01(a.waterNeed + heatStress*0.10);
+
+    const waterOk = clamp01(1 - Math.max(0, effectiveNeed - local.water) * 1.4);
+
+    const waterDepthPenalty = (a.type === "aquatic")
+      ? clamp01(local.water*1.25)
+      : clamp01(1 - Math.max(0, local.water - a.fearWater) * 2.0);
+
+    const wqFactor = (a.type === "aquatic") ? clamp01(0.50 + local.wq*0.50) : 1;
+
+    return clamp01((0.45*terrOk + 0.35*waterOk + 0.20*waterDepthPenalty) * wqFactor);
+  }
+
+  function animalSuitabilityWhy(px,py,animalId){
+    const a = ANIMALS[animalId];
+    const local = sampleLocal(px,py);
+
+    const heatStress = clamp01((state.climate.tempC - 20) / 25);
+    const effectiveNeed = clamp01(a.waterNeed + heatStress*0.10);
+
+    const parts = [];
+    parts.push(a.habitat.includes(local.terr) ? `habitat match (${TERRAIN[local.terr].name})` : `habitat mismatch (${TERRAIN[local.terr].name})`);
+    parts.push(local.water >= effectiveNeed*0.85 ? `water access ok` : `water access low (needs ~${pct(effectiveNeed)}, has ${pct(local.water)})`);
+    if(a.type === "aquatic"){
+      parts.push(local.wq >= 0.45 ? `water quality acceptable` : `water quality low (stress for fish)`);
+    } else if(local.water > a.fearWater){
+      parts.push(`deep water nearby (land animals avoid it)`);
+    }
+    if(state.climate.tempC > 30) parts.push(`heat increases thirst/energy loss`);
+    return parts.join("; ") + ".";
+  }
+
+  // Climate rates
+  function evapRate(){
+    const t = state.climate.tempC;
+    const p = state.climate.precip;
+    const heat = clamp01((t - 15) / 30);
+    const dryness = clamp01((60 - p) / 60);
+    return clamp01(0.35 + heat*0.65 + dryness*0.25);
+  }
+  function rainRate(){
+    return clamp01(state.climate.precip / 100);
+  }
+  function stormFactor(){
+    return clamp01(state.climate.storminess / 100);
+  }
+
+  // =========================================================
+  // Terrain + water physics
+  // =========================================================
+  function localSlope(x,y){
+    const i = idx(x,y);
+    const h0 = state.height[i];
+    let m = 0;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const xx=x+dx, yy=y+dy;
+      if(!inBounds(xx,yy)) continue;
+      const d = Math.abs(h0 - state.height[idx(xx,yy)]);
+      m = Math.max(m, d);
+    }
+    return m;
+  }
+
+  // =========================================================
+  // Animal behavior: forage, thirst, flee, hunt, predation
+  // =========================================================
+  function localFoodAt(px,py,animalDef){
+    const radius = 90;
+    const r2 = radius*radius;
+
+    let plantScore = 0;
+    for(const p of state.plants){
+      const d2 = dist2(p.x,p.y,px,py);
+      if(d2 < r2) plantScore += p.health * (1 - d2/r2);
+    }
+    plantScore = clamp01(plantScore * 0.22);
+
+    if(animalDef.type === "herb" || animalDef.type === "omn" || animalDef.type === "aquatic"){
+      return plantScore;
+    }
+
+    let preyScore = 0;
+    for(const a of state.animals){
+      const t = ANIMALS[a.id].type;
+      if(t === "pred") continue;
+      const d2 = dist2(a.x,a.y,px,py);
+      if(d2 < r2) preyScore += a.energy * (1 - d2/r2);
+    }
+    return clamp01(preyScore * 0.16);
+  }
+
+  function seekWaterVector(px,py){
+    const s = canvasToSim(px,py);
+    let best = {x:0,y:0,score:0};
+    const R = 20;
+    for(let dy=-R; dy<=R; dy++){
+      for(let dx=-R; dx<=R; dx++){
+        const x=s.x+dx, y=s.y+dy;
+        if(!inBounds(x,y)) continue;
+        const i=idx(x,y);
+        const w = state.water[i];
+        if(w < 0.10) continue;
+        const d2 = dx*dx+dy*dy;
+        const score = w / Math.max(1, d2);
+        if(score > best.score){
+          best = {x:dx,y:dy,score};
+        }
+      }
+    }
+    const mag = Math.hypot(best.x,best.y) || 1;
+    return { x: best.score? best.x/mag : 0, y: best.score? best.y/mag : 0 };
+  }
+
+  function seekFoodVector(px,py,animalDef){
+    let tx=0, ty=0, wsum=0;
+    const radius = 140;
+    const r2 = radius*radius;
+
+    if(animalDef.type === "herb" || animalDef.type === "omn" || animalDef.type === "aquatic"){
+      for(const p of state.plants){
+        const d2 = dist2(p.x,p.y,px,py);
+        if(d2<r2){
+          const w = p.health * (1 - d2/r2);
+          tx += (p.x - px) * w;
+          ty += (p.y - py) * w;
+          wsum += w;
+        }
+      }
+    } else {
+      for(const a of state.animals){
+        const t = ANIMALS[a.id].type;
+        if(t === "pred") continue;
+        const d2 = dist2(a.x,a.y,px,py);
+        if(d2<r2){
+          const w = a.energy * (1 - d2/r2);
+          tx += (a.x - px) * w;
+          ty += (a.y - py) * w;
+          wsum += w;
+        }
+      }
+    }
+
+    if(wsum <= 0.0001) return {x:0,y:0};
+    const mag = Math.hypot(tx,ty) || 1;
+    return { x: tx/mag, y: ty/mag };
+  }
+
+  function pushAwayFromWater(px,py){
+    const s = canvasToSim(px,py);
+    if(!inBounds(s.x,s.y)) return {x:0,y:0};
+    let gx=0, gy=0;
+    const i0 = idx(s.x,s.y);
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const x=s.x+dx, y=s.y+dy;
+      if(!inBounds(x,y)) continue;
+      const j = idx(x,y);
+      const dw = state.water[j] - state.water[i0];
+      gx += dx * dw;
+      gy += dy * dw;
+    }
+    const mag = Math.hypot(gx,gy) || 1;
+    return { x: -gx/mag, y: -gy/mag };
+  }
+
+  function findNearestPrey(pred, predDef, preyList){
+    const R = predDef.vision || 200;
+    const r2 = R*R;
+    let best = null, bestD2 = Infinity;
+
+    for(const p of preyList){
+      if(p.dead) continue;
+      if(predDef.hunt && !predDef.hunt.includes(p.id)) continue;
+      const d2 = dist2(pred.x,pred.y,p.x,p.y);
+      if(d2 < r2 && d2 < bestD2){
+        bestD2 = d2;
+        best = p;
+      }
+    }
+    return best;
+  }
+
+  function findNearestPredator(prey, predators){
+    const R = 170;
+    const r2 = R*R;
+    let best = null, bestD2 = Infinity;
+    for(const p of predators){
+      if(p.dead) continue;
+      const d2 = dist2(prey.x,prey.y,p.x,p.y);
+      if(d2 < r2 && d2 < bestD2){
+        bestD2 = d2;
+        best = p;
+      }
+    }
+    return best;
+  }
+
+  function moveAnimal(a, def, predators, prey){
+    // Local environment
+    const local = sampleLocal(a.x,a.y);
+
+    // Thirst rises faster in heat
+    const heat = clamp01((state.climate.tempC - 20)/25);
+    a.thirst = clamp01(a.thirst + (0.010 + heat*0.010));
+
+    // Drink if on/near water
+    if(local.water > 0.25 || ["waterSrc","riverbed","lakebed","oceanbed"].includes(local.terr)){
+      a.thirst = clamp01(a.thirst - 0.040);
+    }
+
+    // Energy from suitability + food
+    const suit = animalSuitability(a.x,a.y,a.id);
+    const food = localFoodAt(a.x,a.y, def);
+    a.energy = clamp01(a.energy + (suit*0.65 + food*0.35 - 0.55) * 0.030);
+    a.energy = clamp01(a.energy - a.thirst*0.010);
+
+    // fish suffer in bad water quality
+    if(def.type === "aquatic" && local.wq < 0.35){
+      a.energy = clamp01(a.energy - (0.01 + (0.35-local.wq)*0.02));
+      bumpCause("pollutionSediment", 0.08);
+    }
+
+    // Steering forces
+    let ax=0, ay=0;
+    ax += (Math.random()-0.5)*0.9;
+    ay += (Math.random()-0.5)*0.9;
+
+    // Seek water if thirsty
+    if(a.thirst > 0.55){
+      const v = seekWaterVector(a.x,a.y);
+      ax += v.x * 2.6;
+      ay += v.y * 2.6;
+      bumpCause("waterStress", 0.05);
+    }
+
+    // Seek food if low energy
+    if(a.energy < 0.45){
+      const v = seekFoodVector(a.x,a.y, def);
+      ax += v.x * 2.0;
+      ay += v.y * 2.0;
+      bumpCause("foodScarcity", 0.05);
+    }
+
+    // Predator hunts
+    if(def.type === "pred"){
+      const target = findNearestPrey(a, def, prey);
+      if(target){
+        const dx = target.x - a.x, dy = target.y - a.y;
+        const mag = Math.hypot(dx,dy) || 1;
+        ax += (dx/mag) * 3.0;
+        ay += (dy/mag) * 3.0;
+      }
+    }
+
+    // Prey flee
+    if(def.type !== "pred" && def.type !== "aquatic"){
+      const threat = findNearestPredator(a, predators);
+      if(threat){
+        const dx = a.x - threat.x, dy = a.y - threat.y;
+        const mag = Math.hypot(dx,dy) || 1;
+        ax += (dx/mag) * 3.2;
+        ay += (dy/mag) * 3.2;
+        a.energy = clamp01(a.energy - 0.004);
+        bumpCause("predationPressure", 0.08);
+      }
+    }
+
+    // Land animals avoid deep water
+    if(def.type !== "aquatic" && local.water > def.fearWater){
+      const v = pushAwayFromWater(a.x,a.y);
+      ax += v.x * 2.3;
+      ay += v.y * 2.3;
+      a.energy = clamp01(a.energy - 0.003);
+    }
+
+    // Fish seek water if stranded
+    if(def.type === "aquatic" && local.water < 0.18){
+      const v = seekWaterVector(a.x,a.y);
+      ax += v.x * 4.2;
+      ay += v.y * 4.2;
+      a.energy = clamp01(a.energy - 0.018);
+      bumpCause("waterStress", 0.12);
+    }
+
+    // Integrate velocity
+    const speed = def.speed * (0.35 + a.energy*0.90);
+    a.vx = (a.vx || 0)*0.90 + ax*0.11;
+    a.vy = (a.vy || 0)*0.90 + ay*0.11;
+
+    const mag = Math.hypot(a.vx,a.vy) || 1;
+    const cap = 1.15;
+    a.vx = (a.vx/mag) * Math.min(mag, cap);
+    a.vy = (a.vy/mag) * Math.min(mag, cap);
+
+    a.x += a.vx * speed * 0.12;
+    a.y += a.vy * speed * 0.12;
+
+    // Bounds
+    if(a.x<0){ a.x=0; a.vx*=-0.6; }
+    if(a.y<0){ a.y=0; a.vy*=-0.6; }
+    if(a.x>canvas.width){ a.x=canvas.width; a.vx*=-0.6; }
+    if(a.y>canvas.height){ a.y=canvas.height; a.vy*=-0.6; }
+
+    // Death
+    if(a.energy < 0.05){
+      a.dead = true;
+      bumpCause("energyCollapse", 0.22);
+    }
+  }
+
+  function handlePredation(){
+    const predators = state.animals.filter(a => ANIMALS[a.id].type === "pred" && !a.dead);
+    const prey = state.animals.filter(a => ANIMALS[a.id].type !== "pred" && !a.dead);
+
+    for(const pr of predators){
+      const def = ANIMALS[pr.id];
+      const target = findNearestPrey(pr, def, prey);
+      if(!target) {
+        // predator starvation risk increases if no prey exists nearby
+        bumpCause("noPrey", 0.06);
+        continue;
+      }
+
+      const d2 = dist2(pr.x,pr.y,target.x,target.y);
+      if(d2 < 22*22){
+        // catch
+        target.energy = clamp01(target.energy - 0.18);
+        pr.energy = clamp01(pr.energy + 0.10);
+        pr.thirst = clamp01(pr.thirst + 0.01);
+
+        bumpCause("predationPressure", 0.18);
+
+        if(target.energy < 0.08){
+          target.dead = true;
+          addLog("info","Predation",
+            `${def.name} hunted ${ANIMALS[target.id].name}. Cause: predator energy needs drive hunting; effect: prey population decreases, which can later starve predators if prey collapses.`
+          );
+        }
+      }
+    }
+  }
+
+  // =========================================================
+  // Metrics (for effects & end summary)
+  // =========================================================
+  function computeMetrics(){
+    let waterAvg=0, soilAvg=0, carbonAvg=0, waterQAvg=0, slopeAvg=0, sedimentPotential=0;
+    let meanH=0;
+    for(let i=0;i<state.height.length;i++) meanH += state.height[i];
+    meanH /= state.height.length;
+    let elevVar=0;
+
+    for(let y=0;y<SIM_H;y++){
+      for(let x=0;x<SIM_W;x++){
+        const i=idx(x,y);
+        const terr = state.terrainId[i];
+        waterAvg += state.water[i];
+        waterQAvg += state.waterQual[i];
+        soilAvg += TERRAIN[terr].soil;
+        carbonAvg += TERRAIN[terr].carbon;
+
+        const sl = localSlope(x,y);
+        slopeAvg += sl;
+        elevVar += (state.height[i]-meanH)*(state.height[i]-meanH);
+
+        sedimentPotential += (TERRAIN[terr].sediment) * (0.25 + sl*2.2);
+      }
+    }
+
+    const N = state.height.length;
+    waterAvg/=N; soilAvg/=N; carbonAvg/=N; waterQAvg/=N; slopeAvg/=N;
+    elevVar = Math.sqrt(elevVar/N);
+
+    sedimentPotential = clamp01((sedimentPotential/N) * (0.6 + stormFactor()*0.8));
+
+    const plantCover = clamp01(state.plants.reduce((s,p)=>s+p.health,0) / 22);
+    const herbCount = state.animals.filter(a => ["herb","omn","aquatic"].includes(ANIMALS[a.id].type)).length;
+    const predCount = state.animals.filter(a => ANIMALS[a.id].type==="pred").length;
+
+    const herbToPlants = herbCount / Math.max(1, state.plants.length);
+    const predToHerb = predCount / Math.max(1, herbCount);
+    const foodweb = clamp01(1 - (Math.abs(0.7 - herbToPlants)*0.6 + Math.abs(0.35 - predToHerb)*0.7));
+
+    const soilHealth = clamp01(0.65*soilAvg + 0.35*plantCover);
+    const erosionSafety = clamp01(1 - (elevVar*1.6 + slopeAvg*1.8) * (1 - soilHealth));
+
+    const waterQuality = clamp01(0.70*waterQAvg + 0.15*waterAvg + 0.15*(1 - sedimentPotential));
+    const carbonStore = clamp01(0.80*carbonAvg + 0.20*plantCover);
+
+    // biodiversity proxy: species richness
+    const unique = new Set();
+    for(const p of state.plants) unique.add("p:"+p.id);
+    for(const a of state.animals) unique.add("a:"+a.id);
+    const maxSpecies = Object.keys(PLANTS).length + Object.keys(ANIMALS).length;
+    const biodiversity = clamp01(1 - Math.exp(-2.8 * (unique.size/maxSpecies)));
+
+    return {
+      biodiversity, foodweb, waterQuality, soilHealth, carbonStore, erosionSafety,
+      waterAvg, waterQAvg, plantCover, slopeAvg, sedimentPotential,
+      herbCount, predCount
+    };
+  }
+
+  function maybeExplainChange(m){
+    // Add cause contributions based on conditions (silent counters)
+    if(m.waterAvg < 0.10) bumpCause("waterStress", 0.20);
+    if(m.waterQuality < 0.35) bumpCause("pollutionSediment", 0.16);
+    if(m.plantCover < 0.20) bumpCause("lowPlantCover", 0.20);
+    if(m.foodweb < 0.35) bumpCause("trophicImbalance", 0.18);
+    if(m.erosionSafety < 0.35) bumpCause("erosionRunoff", 0.16);
+
+    // Periodically log an explanation (cause → effect)
+    if(!state.lastMetrics || state.tick % 20 === 0){
+      const drivers = [];
+      if(m.waterAvg < 0.12) drivers.push("low water availability");
+      if(m.waterQuality < 0.40) drivers.push("poor water quality (sediment/runoff)");
+      if(m.plantCover < 0.25) drivers.push("low plant cover (less food + filtration)");
+      if(state.climate.tempC > 32) drivers.push("heat-driven evaporation/thirst");
+      if(state.climate.precip < 25) drivers.push("drought (weak rainfall recharge)");
+      if(state.climate.storminess > 60) drivers.push("storm runoff (sediment pulses)");
+      if(m.predCount > 0 && m.herbCount === 0) drivers.push("predators with no prey");
+      if(drivers.length === 0) drivers.push("system is relatively stable");
+
+      addLog("info","Why",
+        `Cause(s): ${drivers.join(", ")} → Effect(s): WaterQ ${Math.round(m.waterQuality*100)}%, Soil ${Math.round(m.soilHealth*100)}%, FoodWeb ${Math.round(m.foodweb*100)}%.`
+      );
+    }
+
+    state.lastMetrics = m;
+  }
+
+  // =========================================================
+  // Simulation step (water + plants + animals)
+  // =========================================================
+  function stepSimulation(steps){
+    for(let s=0; s<steps; s++){
+      state.tick++;
+
+      // 1) Rain + water sources
+      const rain = rainRate();
+      const storms = stormFactor();
+      const rainPulse = (Math.random() < (0.10 * rain)) ? (0.05 + 0.10*rain + 0.10*storms) : 0;
+
+      for(let y=0;y<SIM_H;y++){
+        for(let x=0;x<SIM_W;x++){
+          const i=idx(x,y);
+          const terr = state.terrainId[i];
+
+          if(terr==="waterSrc"){
+            state.water[i] = Math.min(1, state.water[i] + 0.06);
+            state.waterQual[i] = Math.min(1, state.waterQual[i] + 0.02);
+          }
+          if(terr==="oceanbed"){
+            state.water[i] = Math.max(state.water[i], 0.72);
+            state.waterQual[i] = Math.max(state.waterQual[i], 0.55);
+          }
+
+          if(rainPulse > 0){
+            const slope = localSlope(x,y);
+            const absorb = TERRAIN[terr].infil;
+            const lowAreaBonus = clamp01(0.65 - state.height[i]);
+            const add = rainPulse * (0.35 + 0.40*absorb + 0.25*lowAreaBonus) * (1 - slope*0.7);
+            if(add > 0){
+              state.water[i] = Math.min(1, state.water[i] + add);
+              state.waterQual[i] = clamp01(state.waterQual[i] + (0.01 - storms*0.01));
+            }
+          }
+        }
+      }
+
+      // 2) Evaporation
+      const evap = evapRate();
+      for(let i=0;i<state.water.length;i++){
+        const terr = state.terrainId[i];
+        const infil = TERRAIN[terr].infil;
+        const loss = (0.0025 + evap*0.006) * (1 - infil*0.35);
+        state.water[i] = Math.max(0, state.water[i] - loss);
+        state.waterQual[i] = clamp01(state.waterQual[i] + 0.0008);
+      }
+
+      // 3) Water flow + sediment
+      const iters = 2;
+      for(let k=0;k<iters;k++){
+        const next = new Float32Array(state.water);
+        const nextQ = new Float32Array(state.waterQual);
+
+        for(let y=1;y<SIM_H-1;y++){
+          for(let x=1;x<SIM_W-1;x++){
+            const i=idx(x,y);
+            const w = state.water[i];
+            if(w <= 0.001) continue;
+
+            const terr = state.terrainId[i];
+            const rough = TERRAIN[terr].rough;
+            const sedBase = TERRAIN[terr].sediment;
+
+            const surface = state.height[i] + w*0.26;
+
+            let bestJ = -1;
+            let bestDrop = 0;
+
+            for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+              const j = idx(x+dx,y+dy);
+              const surfN = state.height[j] + state.water[j]*0.26;
+              const drop = surface - surfN;
+              if(drop > bestDrop){
+                bestDrop = drop;
+                bestJ = j;
+              }
+            }
+
+            if(bestJ >= 0){
+              const slope = clamp01(bestDrop * 4.5);
+              const flow = Math.min(w, (0.08 * slope * (1 - rough*0.55)) );
+              if(flow > 0){
+                next[i] -= flow;
+                next[bestJ] = Math.min(1, next[bestJ] + flow);
+
+                const stormSed = storms * 0.03 * slope;
+                const sedimentPenalty = (sedBase*0.01 + stormSed);
+
+                const qi = nextQ[i];
+                const qj = nextQ[bestJ];
+                const mixedToJ = (qj*next[bestJ] + qi*flow) / Math.max(0.0001, next[bestJ]);
+                nextQ[bestJ] = clamp01(mixedToJ - sedimentPenalty);
+                nextQ[i] = clamp01(qi + 0.0005);
+
+                if(storms > 0.7 && slope > 0.20) bumpCause("storms", 0.03);
+                if(sedBase > 0.55 && slope > 0.12) bumpCause("erosionRunoff", 0.03);
+              }
+            }
+          }
+        }
+
+        state.water = next;
+        state.waterQual = nextQ;
+      }
+
+      // 4) Plants: grow/decline, filter water
+      for(const p of state.plants){
+        const suit = plantSuitability(p.x,p.y,p.id);
+        p.health = clamp01(p.health + (suit - p.health) * 0.06);
+        p.size = Math.max(6, Math.min(26, p.size + (p.health - 0.55) * 0.10));
+
+        const sxy = canvasToSim(p.x,p.y);
+        if(inBounds(sxy.x,sxy.y)){
+          const i = idx(sxy.x,sxy.y);
+          if(state.water[i] > 0.05){
+            state.waterQual[i] = clamp01(state.waterQual[i] + (PLANTS[p.id].filter * p.health * 0.02));
+          }
+        }
+      }
+      const plantBefore = state.plants.length;
+      state.plants = state.plants.filter(p => p.health > 0.10);
+      if(plantBefore > 0 && state.plants.length === 0){
+        addLog("bad","Plants",
+          `All plants died out. Cause: not enough water/soil or too much stress → effect: food + filtration collapse, making animals harder to sustain.`
+        );
+        bumpCause("lowPlantCover", 1.2);
+        bumpCause("foodScarcity", 0.9);
+      }
+
+      // 5) Animals: move + predation
+      const predators = state.animals.filter(a => ANIMALS[a.id].type === "pred" && !a.dead);
+      const prey = state.animals.filter(a => ANIMALS[a.id].type !== "pred" && !a.dead);
+
+      // move prey first (flee)
+      for(const a of prey){
+        moveAnimal(a, ANIMALS[a.id], predators, prey);
+      }
+      // then predators (hunt)
+      for(const a of predators){
+        moveAnimal(a, ANIMALS[a.id], predators, prey);
+      }
+      handlePredation();
+
+      const animalsBefore = state.animals.length;
+      state.animals = state.animals.filter(a => !a.dead);
+      if(animalsBefore > 0 && state.animals.length === 0){
+        addLog("bad","Animals",
+          `All animals died out. Cause: energy stays low when food/water is insufficient; predators also fail if prey collapses.`
+        );
+        bumpCause("energyCollapse", 1.2);
+      }
+
+      // Track life ever existing (for end-game condition)
+      if(state.plants.length + state.animals.length > 0) state.everHadLife = true;
+
+      // sample metrics history every 10 ticks
+      if(state.tick % 10 === 0){
+        const m = computeMetrics();
+        state.metricsHistory.push({ tick: state.tick, m });
+        if(state.metricsHistory.length > 600) state.metricsHistory.shift();
+        maybeExplainChange(m);
+      }
+
+      // end-game check
+      checkEndGame();
+
+      if(state.endGame) break;
+    }
+  }
+
+  function checkEndGame(){
+    if(state.endGame) return;
+    if(!state.everHadLife) return; // user never added life
+    if(state.plants.length === 0 && state.animals.length === 0){
+      state.endGame = true;
+      state.running = false;
+      state.extinctionTick = state.tick;
+      btnPlay.textContent = "▶ Play";
+      overlay.textContent = "End Game — ecosystem collapsed";
+      addLog("bad","End Game",
+        `Extinction event: all life is gone. Opening summary…`
+      );
+      showEndSummary();
+    }
+  }
+
+  // =========================================================
+  // Stats render
+  // =========================================================
+  function renderStats(forceExplain){
+    const m = computeMetrics();
+
+    // History sample (if not already sampled recently)
+    if(state.tick % 10 !== 0 && forceExplain){
+      state.metricsHistory.push({ tick: state.tick, m });
+      if(state.metricsHistory.length > 600) state.metricsHistory.shift();
+    }
+
+    const stats = [
+      { label:"Biodiversity", value:m.biodiversity, note:"More unique species → resilience." },
+      { label:"Food Web Balance", value:m.foodweb, note:"Plants → herbivores → predators." },
+      { label:"Water Quality", value:m.waterQuality, note:"Sediment/storms hurt; plants filter." },
+      { label:"Soil Health", value:m.soilHealth, note:"Plants/forests build soil stability." },
+      { label:"Carbon Storage", value:m.carbonStore, note:"Plants/forests store carbon." },
+      { label:"Erosion Safety", value:m.erosionSafety, note:"Steep + bare terrain erodes more." },
+    ];
+
+    statsEl.innerHTML = "";
+    for(const s of stats){
+      const box = document.createElement("div");
+      box.className = "stat";
+      const row = document.createElement("div");
+      row.className = "row2";
+      const lab = document.createElement("div");
+      lab.className = "label";
+      lab.textContent = s.label;
+      const val = document.createElement("div");
+      val.className = "value";
+      val.textContent = Math.round(s.value*100) + "%";
+      row.appendChild(lab); row.appendChild(val);
+
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      const fill = document.createElement("div");
+      fill.style.width = (clamp01(s.value)*100) + "%";
+      bar.appendChild(fill);
+
+      const note = document.createElement("div");
+      note.style.marginTop = "6px";
+      note.style.color = "var(--muted)";
+      note.style.fontSize = "11px";
+      note.textContent = s.note;
+
+      box.appendChild(row);
+      box.appendChild(bar);
+      box.appendChild(note);
+      statsEl.appendChild(box);
+    }
+
+    worldHint.textContent =
+      `Auto: ${state.running ? "ON" : "OFF"} • Tick ${state.tick} • Plants ${state.plants.length} • Animals ${state.animals.length} • Climate ${state.climate.tempC}°C/${state.climate.precip}%`;
+  }
+
+  // =========================================================
+  // Rendering
+  // =========================================================
+  function draw(){
+    const img = ctx.createImageData(canvas.width, canvas.height);
+    const data = img.data;
+
+    for(let py=0; py<canvas.height; py++){
+      const sy = Math.floor(py / canvas.height * SIM_H);
+      for(let px=0; px<canvas.width; px++){
+        const sx = Math.floor(px / canvas.width * SIM_W);
+        const iSim = idx(sx,sy);
+        const terr = state.terrainId[iSim];
+        const h = state.height[iSim];
+        const w = state.water[iSim];
+        const q = state.waterQual[iSim];
+
+        let r=22, g=34, b=58;
+        if(terr==="sand"){ r=78; g=72; b=52; }
+        if(terr==="rock"){ r=60; g=62; b=70; }
+        if(terr==="grass"){ r=34; g=66; b=42; }
+        if(terr==="forest"){ r=28; g=58; b=38; }
+        if(terr==="hill"){ r=38; g=60; b=46; }
+        if(terr==="mountain"){ r=58; g=60; b=64; }
+        if(terr==="riverbed"){ r=28; g=52; b=64; }
+        if(terr==="lakebed"){ r=24; g=48; b=70; }
+        if(terr==="oceanbed"){ r=18; g=40; b=82; }
+        if(terr==="waterSrc"){ r=20; g=56; b=78; }
+
+        const shade = clamp01(0.55 + h*0.95);
+        r = Math.round(r * shade);
+        g = Math.round(g * shade);
+        b = Math.round(b * shade);
+
+        if(w > 0.02){
+          const clarity = clamp01(q);
+          const wr = Math.round(20 + 44*(1-clarity));
+          const wg = Math.round(62 + 46*clarity);
+          const wb = Math.round(120 + 90*clarity);
+          const alpha = clamp01(w) * 0.75;
+          r = Math.round(lerp(r, wr, alpha));
+          g = Math.round(lerp(g, wg, alpha));
+          b = Math.round(lerp(b, wb, alpha));
+        }
+
+        const p = (py*canvas.width + px) * 4;
+        data[p+0]=r; data[p+1]=g; data[p+2]=b; data[p+3]=255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+
+    // Plants
+    ctx.font = "22px system-ui, Apple Color Emoji, Segoe UI Emoji";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for(const p of state.plants){
+      ctx.globalAlpha = 0.45 + p.health*0.55;
+      ctx.fillText(PLANTS[p.id].icon, p.x, p.y);
+    }
+
+    // Animals
+    ctx.font = "24px system-ui, Apple Color Emoji, Segoe UI Emoji";
+    for(const a of state.animals){
+      ctx.globalAlpha = 0.55 + a.energy*0.45;
+      ctx.fillText(ANIMALS[a.id].icon, a.x, a.y);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // =========================================================
+  // Presets + reset
+  // =========================================================
+  function applyWorldPreset(terrainKey, name){
+    if(state.endGame) return;
+    for(let y=0;y<SIM_H;y++){
+      for(let x=0;x<SIM_W;x++){
+        const i=idx(x,y);
+        state.terrainId[i] = terrainKey;
+        state.height[i] = lerp(state.height[i], TERRAIN[terrainKey].elev, 0.95);
+        state.water[i] = 0;
+        state.waterQual[i] = 0.55;
+        if(terrainKey === "oceanbed"){
+          state.water[i] = 0.75;
+          state.waterQual[i] = 0.55;
+        }
+      }
+    }
+    addLog("info","Preset",
+      `Applied "${name}". Cause: global terrain shift changes slope/infiltration → effects: changes runoff, sediment, and which habitats can support life.`
+    );
+    if(terrainKey === "mountain") bumpCause("erosionRunoff", 0.8);
+    if(terrainKey === "sand") bumpCause("drought", 0.6);
+    if(terrainKey === "oceanbed") bumpCause("habitatMismatch", 0.7);
+    renderStats(true);
+  }
+
+  function mixedBiomes(){
+    if(state.endGame) return;
+    resetWorld();
+    const patches = 26;
+    const keys = ["forest","hill","mountain","sand","rock","riverbed","lakebed","oceanbed"];
+    for(let n=0;n<patches;n++){
+      const px = Math.random()*canvas.width;
+      const py = Math.random()*canvas.height;
+      const k = keys[Math.floor(Math.random()*keys.length)];
+      paintTerrain(px,py,k);
+    }
+    for(let n=0;n<3;n++){
+      paintTerrain(Math.random()*canvas.width, Math.random()*canvas.height, "waterSrc");
+    }
+    addLog("info","Preset","Mixed biomes created. Cause: patchy terrain creates basins & slopes → effects: water movement and diverse habitats.");
+    renderStats(true);
+  }
+
+  function resetWorld(){
+    state.tick = 0;
+    state.running = false;
+    state.endGame = false;
+    state.everHadLife = false;
+    state.extinctionTick = null;
+
+    state.logEvents = [];
+    state.metricsHistory = [];
+    state.causeCounters = new Map();
+    state.lastMetrics = null;
+
+    btnPlay.textContent = "▶ Play";
+    overlay.textContent = "Drop items anywhere • Play to run";
+
+    for(let y=0;y<SIM_H;y++){
+      for(let x=0;x<SIM_W;x++){
+        const i=idx(x,y);
+        state.terrainId[i] = "grass";
+        state.height[i] = (Math.random()-0.5)*0.03;
+        state.water[i] = 0;
+        state.waterQual[i] = 0.55;
+      }
+    }
+    state.plants = [];
+    state.animals = [];
+
+    // clear log UI
+    logEl.innerHTML = "";
+
+    addLog("info","System",
+      "World reset to default grassland. Cause: moderate soil + infiltration; effect: stable baseline for experimentation."
+    );
+    renderStats(true);
+    draw();
+  }
+
+  // =========================================================
+  // End-game summary (cause & effect)
+  // =========================================================
+  function showEndSummary(){
+    // Build summary text based on metrics history + causes
+    const summary = buildSummaryText();
+
+    summaryBody.innerHTML = summary.html;
+    backdrop.style.display = "flex";
+    backdrop.setAttribute("aria-hidden", "false");
+  }
+
+  function hideEndSummary(){
+    backdrop.style.display = "none";
+    backdrop.setAttribute("aria-hidden", "true");
+  }
+
+  function buildSummaryText(){
+    const endTick = state.extinctionTick ?? state.tick;
+
+    const m0 = state.metricsHistory.length ? state.metricsHistory[0].m : computeMetrics();
+    const mEnd = state.metricsHistory.length ? state.metricsHistory[state.metricsHistory.length-1].m : computeMetrics();
+
+    const peakPlants = state.metricsHistory.length
+      ? Math.max(...state.metricsHistory.map(h => h.m.plantCover))
+      : 0;
+
+    // Identify top causes
+    const causeLabels = {
+      drought: "Low precipitation (drought)",
+      heat: "High temperature (evaporation & thirst)",
+      storms: "Storm runoff (sediment pulses)",
+      erosionRunoff: "Steep/erodible terrain (erosion + runoff)",
+      lowPlantCover: "Low plant cover (food/filtration collapse)",
+      foodScarcity: "Food scarcity (plants too few / weak)",
+      waterStress: "Water stress (insufficient accessible water)",
+      pollutionSediment: "Poor water quality (sediment/runoff)",
+      trophicImbalance: "Trophic imbalance (predator/prey mismatch)",
+      predationPressure: "High predation pressure",
+      noPrey: "Predators lacked prey (starvation cascade)",
+      habitatMismatch: "Habitat mismatch (species placed in poor habitat)",
+      humanRemoval: "Removal tool impacts (human disturbance)",
+      energyCollapse: "Energy collapse (chronic starvation/thirst)",
+    };
+
+    const causesSorted = [...state.causeCounters.entries()]
+      .sort((a,b) => b[1]-a[1])
+      .slice(0,6);
+
+    const causeBullets = causesSorted.length
+      ? causesSorted.map(([id,score]) => `<li><b>${causeLabels[id] || id}</b> — contributed score ${score.toFixed(2)}.</li>`).join("")
+      : `<li><b>No dominant cause detected</b> — the model didn’t record strong drivers (unlikely unless extinction was immediate).</li>`;
+
+    // A simple cause→effect narrative using end conditions
+    const narrative = [];
+    if(state.climate.precip < 25) narrative.push("Low precipitation reduced rainfall recharge, so basins dried out faster.");
+    if(state.climate.tempC > 32) narrative.push("High temperature increased evaporation, raising thirst and plant water stress.");
+    if(state.climate.storminess > 60) narrative.push("Strong storms increased runoff and sediment, degrading water quality.");
+    if(mEnd.plantCover < 0.20) narrative.push("Plant cover fell, which removed food for herbivores and filtration that keeps water cleaner.");
+    if(mEnd.waterQuality < 0.40) narrative.push("Water quality dropped, stressing aquatic life and reducing overall habitat suitability.");
+    if(mEnd.foodweb < 0.35) narrative.push("Food web balance collapsed (not enough base food or predator/prey mismatch).");
+    if(mEnd.predCount > 0 && mEnd.herbCount === 0) narrative.push("Predators remained after prey collapsed, causing starvation cascades.");
+    if(narrative.length === 0) narrative.push("Extinction occurred without a single dominant driver; multiple moderate stresses likely combined.");
+
+    // Quick stats chips
+    const chips = [
+      `Extinction tick: ${endTick}`,
+      `Climate: ${state.climate.tempC}°C / precip ${state.climate.precip}% / storms ${state.climate.storminess}%`,
+      `Start WaterQ: ${Math.round(m0.waterQuality*100)}% → End: ${Math.round(mEnd.waterQuality*100)}%`,
+      `Start Soil: ${Math.round(m0.soilHealth*100)}% → End: ${Math.round(mEnd.soilHealth*100)}%`,
+      `Peak Plant Cover: ${Math.round(peakPlants*100)}%`,
+      `End Food Web: ${Math.round(mEnd.foodweb*100)}%`,
+    ];
+
+    // Recent key events (last 10)
+    const recent = state.logEvents.slice(-10).reverse()
+      .map(e => `<li><b>[t${e.tick}] ${escapeHtml(e.title)}:</b> ${escapeHtml(e.text)}</li>`)
+      .join("");
+
+    const html = `
+      <div class="grid2">
+        <div class="box">
+          <h4>What happened</h4>
+          <div>
+            The ecosystem reached <b>extinction</b>: all plants and animals are gone.
+            The simulation tracks stressors over time; the top drivers below explain the collapse in cause-and-effect terms.
+          </div>
+          <div class="pillRow">
+            ${chips.map(c => `<span class="pill2">${escapeHtml(c)}</span>`).join("")}
+          </div>
+        </div>
+
+        <div class="box">
+          <h4>Cause → Effect Summary</h4>
+          <ul class="causeList">
+            ${narrative.map(s => `<li>${escapeHtml(s)}</li>`).join("")}
+          </ul>
+          <div class="mini">
+            This is a simplified model: it highlights key relationships (climate → water → plants → animals → predators), not exact real-world outcomes.
+          </div>
+        </div>
+
+        <div class="box">
+          <h4>Top drivers (ranked)</h4>
+          <ul class="causeList">
+            ${causeBullets}
+          </ul>
+        </div>
+
+        <div class="box">
+          <h4>Recent timeline (last events)</h4>
+          <ul class="causeList">
+            ${recent || "<li>No events logged.</li>"}
+          </ul>
+        </div>
+      </div>
+      <div class="box" style="margin-top:12px;">
+        <h4>Try again (experiments)</h4>
+        <ul class="causeList">
+          <li><b>Stabilize water:</b> add 🚰 water sources; lower temperature; raise precipitation.</li>
+          <li><b>Reduce sediment:</b> add forests/reeds; lower storminess; avoid steep mountains without plant cover.</li>
+          <li><b>Fix trophic balance:</b> ensure enough plants before herbivores; ensure enough prey before predators.</li>
+          <li><b>Habitat matching:</b> fish need water bodies; kelp needs ocean; rabbits/deer prefer grass/forest.</li>
+        </ul>
+      </div>
+    `;
+
+    // Also provide a plain-text summary for copy
+    const text = [
+      `EcoBuilder — End Game Summary`,
+      `Extinction tick: ${endTick}`,
+      `Climate: ${state.climate.tempC}°C, precip ${state.climate.precip}%, storms ${state.climate.storminess}%`,
+      `Start WaterQ: ${Math.round(m0.waterQuality*100)}% → End: ${Math.round(mEnd.waterQuality*100)}%`,
+      `Start Soil: ${Math.round(m0.soilHealth*100)}% → End: ${Math.round(mEnd.soilHealth*100)}%`,
+      `Peak Plant Cover: ${Math.round(peakPlants*100)}%`,
+      `End Food Web: ${Math.round(mEnd.foodweb*100)}%`,
+      ``,
+      `Cause → Effect:`,
+      ...narrative.map(s => `- ${s}`),
+      ``,
+      `Top drivers:`,
+      ...(causesSorted.length ? causesSorted.map(([id,score]) => `- ${causeLabels[id] || id}: ${score.toFixed(2)}`) : [`- (none detected)`]),
+      ``,
+      `Recent events:`,
+      ...(state.logEvents.slice(-10).map(e => `- [t${e.tick}] ${e.title}: ${e.text}`)),
+    ].join("\n");
+
+    state._summaryText = text;
+    return { html, text };
+  }
+
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  btnCloseSummary.addEventListener("click", hideEndSummary);
+  backdrop.addEventListener("click", (e) => { if(e.target === backdrop) hideEndSummary(); });
+
+  btnCopySummary.addEventListener("click", async () => {
+    const text = state._summaryText || "No summary available.";
+    try{
+      await navigator.clipboard.writeText(text);
+      addLog("good","Summary","Copied end-game summary to clipboard.");
+    }catch(_){
+      addLog("info","Summary","Couldn’t access clipboard. Select and copy manually from the modal.");
+    }
+  });
+
+  btnResetFromSummary.addEventListener("click", () => {
+    hideEndSummary();
+    resetWorld();
+  });
+
+  // =========================================================
+  // Buttons
+  // =========================================================
+  btnPlay.addEventListener("click", () => {
+    if(state.endGame) return;
+    state.running = !state.running;
+    btnPlay.textContent = state.running ? "⏸ Pause" : "▶ Play";
+    overlay.textContent = state.running ? "Running…" : "Drop items anywhere • Play to run";
+    addLog("info","Sim",
+      state.running
+        ? "Simulation started. Cause: time advances; effect: water flows, climate applies, organisms move and interact."
+        : "Simulation paused. Cause: time frozen; effect: you can edit without populations changing."
+    );
+    renderStats(false);
+  });
+
+  btnStep.addEventListener("click", () => {
+    if(state.endGame) return;
+    if(state.running){
+      addLog("info","Sim","Pause first to step manually.");
+      return;
+    }
+    stepSimulation(3);
+    renderStats(true);
+    draw();
+    addLog("info","Sim","Stepped simulation forward. Cause: applied climate + flow + biology; effect: updated populations and water.");
+  });
+
+  btnMixed.addEventListener("click", () => {
+    if(state.endGame) return;
+    mixedBiomes();
+  });
+
+  btnReset.addEventListener("click", () => {
+    hideEndSummary();
+    resetWorld();
+  });
+
+  // =========================================================
+  // Animation loop (fixed-step accumulator for smoothness)
+  // =========================================================
+  let last = performance.now();
+  let acc = 0;
+
+  function loop(now){
+    const realDt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+
+    if(state.running && !state.endGame){
+      const scaled = realDt * state.speed;
+      const dt = 1/60;
+      acc += scaled;
+      acc = Math.min(acc, 0.25);
+
+      let steps = 0;
+      while(acc >= dt){
+        stepSimulation(1);
+        acc -= dt;
+        steps++;
+        if(steps > 10) break;
+        if(state.endGame) break;
+      }
+
+      if(state.tick % 10 === 0) renderStats(false);
+    }
+
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // =========================================================
+  // Boot
+  // =========================================================
+  function boot(){
+    state.speed = Number(speedSlider.value);
+    speedLabel.textContent = `${state.speed.toFixed(2)}×`.replace(".00","").replace("1.00×","1×");
+
+    renderLeft();
+    resetWorld();
+
+    addLog("info","Welcome",
+      "Add plants/animals and press Play. If all life dies out, you’ll get an end-game summary with ranked causes and cause→effect explanations."
+    );
+
+    requestAnimationFrame(loop);
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
